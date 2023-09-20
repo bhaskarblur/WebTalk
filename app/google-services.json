@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "798783736809",
+    "firebase_url": "https://webtalk-72d64-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "webtalk-72d64",
+    "storage_bucket": "webtalk-72d64.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:798783736809:android:8dbf13ceeb3681a59b1978",
+        "android_client_info": {
+          "package_name": "com.bhaskarblur.webtalk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB70DkNOBl1LHCgtTmhSV9hNRx9T_P4rPQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
