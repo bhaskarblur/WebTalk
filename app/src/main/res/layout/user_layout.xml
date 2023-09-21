@@ -38,8 +38,7 @@
         app:tint="@color/greenPrimary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:src="@drawable/video_icon"
-        app:srcCompat="@drawable/voice_icon" />
+        android:src="@drawable/voice_icon" />
 
     <ImageView
         android:id="@+id/videoIcon"
@@ -49,6 +48,5 @@
         app:tint="@color/greenPrimary"
         app:layout_constraintEnd_toStartOf="@+id/voiceIcon"
         app:layout_constraintTop_toTopOf="parent"
-        android:src="@drawable/voice_icon"
-        app:srcCompat="@drawable/video_icon" />
+        android:src="@drawable/video_icon" />
 </androidx.constraintlayout.widget.ConstraintLayout>

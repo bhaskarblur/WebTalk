@@ -44,7 +44,8 @@ android {
 }
 
 dependencies {
-
+    implementation ("com.mesibo.api:webrtc:1.0.5")
+    implementation ("org.webrtc:google-webrtc:1.0.22672")
     implementation ("com.google.android.flexbox:flexbox:3.0.0")
     // implementation 'me.bendik.simplerangeview:simplerangeview:0.2.0'
     implementation("com.google.android.material:material:1.7.0")

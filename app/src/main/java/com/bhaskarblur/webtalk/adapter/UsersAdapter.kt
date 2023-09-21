@@ -1,6 +1,7 @@
 package com.bhaskarblur.webtalk.adapter
 
 import android.content.Context
+import android.graphics.Color
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,6 +16,7 @@ class usersAdapter : RecyclerView.Adapter<usersAdapter.viewHolder> {
 
     private lateinit var list : ArrayList<userPublicModel>;
     private lateinit var content : Context;
+    public lateinit var listener: callActionListener;
 
     constructor(list: ArrayList<userPublicModel>, content: Context) : super() {
         this.list = list
@@ -24,7 +26,7 @@ class usersAdapter : RecyclerView.Adapter<usersAdapter.viewHolder> {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): viewHolder {
         var view = LayoutInflater.from(content).inflate(R.layout.user_layout, parent, false);
-        return viewHolder(view);
+        return viewHolder(view, listener);
     }
 
     override fun getItemCount(): Int {
@@ -36,19 +38,22 @@ class usersAdapter : RecyclerView.Adapter<usersAdapter.viewHolder> {
         holder.name.setText(list.get(position).username);
         holder.status.setText(list.get(position).status);
         Log.d("statusUser", list.get(position).status);
-        if(list.get(position).status.equals("Offline")) {
+        if(list.get(position).status.equals("Offline") ||
+            list.get(position).status.equals("OnCall")) {
             holder.video.setVisibility(View.GONE);
             holder.voice.setVisibility(View.GONE);
+            holder.status.setTextColor(content.resources.getColor(R.color.red));
 
         }
         else {
             holder.video.setVisibility(View.VISIBLE);
             holder.voice.setVisibility(View.VISIBLE);
+            holder.status.setTextColor(content.resources.getColor(R.color.greenPrimary));
         }
     }
 
 
-    class viewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class viewHolder(itemView: View, listener: callActionListener) : RecyclerView.ViewHolder(itemView) {
 
         var name : TextView = itemView.findViewById(R.id.userName);
         var status : TextView = itemView.findViewById(R.id.userStatus);
@@ -57,6 +62,27 @@ class usersAdapter : RecyclerView.Adapter<usersAdapter.viewHolder> {
 
         init {
 
+            video.setOnClickListener {
+                if(adapterPosition != RecyclerView.NO_POSITION) {
+                    listener.onVideoCall(adapterPosition );
+                }
+            }
+
+            voice.setOnClickListener {
+                if(adapterPosition != RecyclerView.NO_POSITION) {
+                    listener.onAudioCall(adapterPosition );
+                }
+            }
+
         }
+    }
+
+    fun setCallActionListener(listener: callActionListener) {
+        this.listener = listener;
+    }
+    interface callActionListener {
+        fun onVideoCall(position: Int);
+
+        fun onAudioCall(position: Int);
     }
 }
