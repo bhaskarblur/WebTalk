@@ -105,7 +105,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     }
 
     override fun onUserAdded(message: callModel) {
-//        Toast.makeText(this, "user added!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "user added!", Toast.LENGTH_SHORT).show()
         val candidate : IceCandidate? = try {
             gson.fromJson(message.callData.toString(),IceCandidate::class.java);
 

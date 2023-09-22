@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
+import android.widget.Toast
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityReceiveCallScreenBinding
 import com.bhaskarblur.webtalk.model.callModel
@@ -19,6 +20,7 @@ import com.bhaskarblur.webtalk.utils.webRTCHandler
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.gson.Gson
+import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
 
 class callScreen : AppCompatActivity(), callHandler {
@@ -59,8 +61,7 @@ class callScreen : AppCompatActivity(), callHandler {
         binding.acceptCall.setOnClickListener {
             firebaseWebRTCHandler.setTarget(receiverEmail);
             firebaseWebRTCHandler.initWebRTCClient(email);
-//            firebaseWebRTCHandler.acceptCall(receiverEmail);
-            firebaseWebRTCHandler.pickCall(receiverEmail);
+            firebaseWebRTCHandler.startCall(receiverEmail, "Offer")
             var intent = Intent(this@callScreen, videoCallActivity::class.java)
             intent.putExtra("userName", receiverName);
             intent.putExtra("userEmail",  receiverEmail);
@@ -88,7 +89,6 @@ class callScreen : AppCompatActivity(), callHandler {
         binding.userNameText.setText("From "+receiverName);
 
 
-
         email = prefs!!.getString("userEmail","")!!;
         userName = prefs!!.getString("userName","")!!;
 
@@ -113,12 +113,10 @@ class callScreen : AppCompatActivity(), callHandler {
     }
 
     override fun onCallReceived(message: callModel) {
+
     }
 
     override fun onInitOffer(message: callModel) {
-        rtcHandler.onRemoteSessionReceived(
-            SessionDescription(SessionDescription.Type.OFFER, message.callData.toString())
-        )
 
 
     }
@@ -135,5 +133,17 @@ class callScreen : AppCompatActivity(), callHandler {
     }
 
     override fun onUserAdded(message: callModel) {
+
+        val candidate : IceCandidate? = try {
+            Gson().fromJson(message.callData.toString(), IceCandidate::class.java);
+
+        } catch (e:Exception) {
+            null;
+        }
+        Toast.makeText(this, "user added "+candidate!!.sdp.toString() , Toast.LENGTH_SHORT).show()
+
+        candidate?.let {
+            rtcHandler.sendIceCandidate(receiverEmail, it);
+        }
     }
 }

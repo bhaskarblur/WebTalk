@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -26,14 +27,19 @@ import com.bhaskarblur.webtalk.utils.callTypes
 import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
 import com.bhaskarblur.webtalk.utils.helper
+import com.bhaskarblur.webtalk.utils.webRTCHandler
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.gson.Gson
+import org.webrtc.SessionDescription
 
 
 class mainActivity : AppCompatActivity(), callHandler {
+    lateinit var firebaseWebRTCHandler: firebaseWebRTCHandler;
+    lateinit var rtcHandler: webRTCHandler;
     private lateinit var binding: ActivityMainBinding;
     private lateinit var userRef : DatabaseReference;
     private var userList : ArrayList<userPublicModel> = ArrayList();
@@ -43,6 +49,7 @@ class mainActivity : AppCompatActivity(), callHandler {
     private var username : String? = ""
     private lateinit var firebaseHandler : firebaseHandler;
     lateinit var service :mainService;
+    private var target: String = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater);
@@ -89,8 +96,10 @@ class mainActivity : AppCompatActivity(), callHandler {
         email = prefs!!.getString("userEmail","");
         binding.userName.setText("Hello "+username +" !");
         firebaseHandler = firebaseHandler(this, userRef, email!!, username!!);
-        service = mainService(this, firebaseWebRTCHandler(
-            this, userRef, email!!, username!!, firebaseHandler)).getInstance();
+        firebaseWebRTCHandler = firebaseWebRTCHandler(this,userRef, email!!,
+            username!! , firebaseHandler);
+
+        service = mainService(this, firebaseWebRTCHandler).getInstance();
 
         service.setCallHandler(this, firebaseHandler)
             service.startService(email!!, this);
@@ -121,6 +130,8 @@ class mainActivity : AppCompatActivity(), callHandler {
         });
 
 
+        rtcHandler = webRTCHandler(this, Gson(), firebaseHandler);
+
 
 
     }
@@ -141,10 +152,10 @@ class mainActivity : AppCompatActivity(), callHandler {
 
                 var intent = Intent(this@mainActivity, makeCall::class.java);
                 intent.putExtra("userName", userList.get(position).username);
-                intent.putExtra("userEmail",  userList.get(position).email);
-                intent.putExtra("callType", callTypes.StartedVideoCall.name);
-                startActivity(intent);
-                firebaseHandler.setAcceptCall(false);
+//                intent.putExtra("userEmail",  userList.get(position).email);
+//                intent.putExtra("callType", callTypes.StartedVideoCall.name);
+//                activity(intent);
+//                firebaseHandler.setAcceptCall(false);
                 overridePendingTransition(R.anim.fade_2, R.anim.fade);
 
             }
@@ -157,17 +168,29 @@ class mainActivity : AppCompatActivity(), callHandler {
                 firebaseHandler.callUser(user)
 
                 var intent = Intent(this@mainActivity, makeCall::class.java);
-                intent.putExtra("userName", userList.get(position).username);
-                intent.putExtra("userEmail",  userList.get(position).email);
-                intent.putExtra("callType", callTypes.StartedAudioCall.name);
-                startActivity(intent);
-                firebaseHandler.setAcceptCall(false);
+//                intent.putExtra("userName", userList.get(position).username);
+//                intent.putExtra("userEmail",  userList.get(position).email);
+//                intent.putExtra("callType", callTypes.StartedAudioCall.name);
+//                startActivity(intent);
+//                firebaseHandler.setAcceptCall(false);
                 overridePendingTransition(R.anim.fade_2, R.anim.fade);
             }
 
         })
 
         binding.userRV.adapter = userAdapter;
+
+        binding.acceptbtns.setOnClickListener {
+            firebaseWebRTCHandler.setTarget(target);
+            firebaseWebRTCHandler.initWebRTCClient(email!!);
+
+            // This creates an offer!
+            firebaseWebRTCHandler.startCall(target, "Offer")
+
+            // This accepts the call
+            firebaseHandler.answerUser(callModel(email, username, target
+                , null, callTypes.Answer.name));
+        }
 
     }
 
@@ -212,26 +235,45 @@ class mainActivity : AppCompatActivity(), callHandler {
 
     override fun onResume() {
         super.onResume()
-        firebaseHandler.setAcceptCall(true);
     }
     override fun onCallReceived(message: callModel) {
 
         if(message.isValid()) {
-            var intent = Intent(this@mainActivity, callScreen::class.java);
-            intent.putExtra("userName", message.senderName);
-            intent.putExtra("userEmail", message.senderEmail);
-            intent.putExtra("callType", message.callType);
-            startActivity(intent);
-            firebaseHandler.setAcceptCall(false);
-            overridePendingTransition(R.anim.fade_2, R.anim.fade);
+
+            binding.callLayout.visibility = View.VISIBLE;
+            binding.calltext.setText("You've an incoming call from "
+            +message.senderName.toString());
+
+            target = message.senderEmail!!;
+//            var intent = Intent(this@mainActivity, callScreen::class.java);
+//            intent.putExtra("userName", message.senderName);
+//            intent.putExtra("userEmail", message.senderEmail);
+//            intent.putExtra("callType", message.callType);
+//            startActivity(intent);
+//            firebaseHandler.setAcceptCall(false);
+//            overridePendingTransition(R.anim.fade_2, R.anim.fade);
         }
 
+        else {
+            binding.callLayout.visibility = View.GONE;
+        }
     }
 
     override fun onInitOffer(message: callModel) {
+        // this initiates another sdp
+//        firebaseWebRTCHandler.a(target)
+        firebaseWebRTCHandler.pickCall(target);
+
     }
 
     override fun onCallAccepted(message: callModel) {
+        Log.d("accepted","yes");
+        rtcHandler.onRemoteSessionReceived(
+            SessionDescription(
+                SessionDescription.Type.ANSWER,
+                message.callData.toString())
+        )
+        Toast.makeText(this, "Call Accepted", Toast.LENGTH_SHORT).show()
 
     }
 
@@ -243,5 +285,6 @@ class mainActivity : AppCompatActivity(), callHandler {
     }
 
     override fun onUserAdded(message: callModel) {
+
     }
 }

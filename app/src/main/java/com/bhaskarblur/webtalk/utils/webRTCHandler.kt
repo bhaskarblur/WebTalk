@@ -32,9 +32,9 @@ class webRTCHandler  {
     private val peerConnectionFactory by lazy { createPeerConnectionFactory() }
     private var peerConnectionInstance : PeerConnection? = null;
     private val iceServer = listOf(
-        PeerConnection.IceServer.builder("turn:turn.anyfirewall.com:443?transport=tcp")
-            .setUsername("webrtc")
-            .setPassword("webrtc").createIceServer()
+        PeerConnection.IceServer.builder("turn:a.relay.metered.ca:443?transport=tcp")
+            .setUsername("83eebabf8b4cce9d5dbcb649")
+            .setPassword("2D7JvfkOQtBdYW3R").createIceServer()
     )
     private lateinit var userEmail : String;
     private lateinit var userName : String;
@@ -194,7 +194,6 @@ class webRTCHandler  {
                                 callModel(userEmail, userName, target, desc?.description
                                     , callType)
                             )
-                            answer(target);
                         }
 
                         override fun onCreateFailure(p0: String?) {
@@ -275,7 +274,6 @@ class webRTCHandler  {
     }
 
     fun addIceCandidateToPeer(iceCandidate: IceCandidate) {
-        Log.d("icepeer",iceCandidate.sdp.toString() );
         peerConnectionInstance?.addIceCandidate(iceCandidate);
     }
 

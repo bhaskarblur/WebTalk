@@ -40,5 +40,5 @@ package com.bhaskarblur.webtalk.model
 
 }
 fun callModel.isValid(): Boolean {
-    return System.currentTimeMillis() - this.timeStamp < 60000;
+    return System.currentTimeMillis() - this.timeStamp < 30000;
 }

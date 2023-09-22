@@ -179,6 +179,15 @@ class firebaseWebRTCHandler {
     fun initWebRTCClient(email: String) {
         webRTCHandler = webRTCHandler(context, gsonObject, firebaseHandler);
         webRTCHandler.initializeWebRTCClient(email, object : myPeerObserver() {
+            override fun onIceConnectionChange(p0: PeerConnection.IceConnectionState?) {
+                super.onIceConnectionChange(p0)
+                Log.d("iceChanged", p0.toString());
+            }
+
+            override fun onSignalingChange(p0: PeerConnection.SignalingState?) {
+                super.onSignalingChange(p0)
+                Log.d("signalChanged", p0.toString());
+            }
             override fun onAddStream(p0: MediaStream?) {
                 super.onAddStream(p0)
                 Log.d("adstream", p0.toString());
@@ -235,7 +244,7 @@ class firebaseWebRTCHandler {
     }
 
     fun acceptCall(target:String) {
-//        webRTCHandler.answer(target);
+        webRTCHandler.answer(target);
     }
 
     fun pickCall(target:String) {

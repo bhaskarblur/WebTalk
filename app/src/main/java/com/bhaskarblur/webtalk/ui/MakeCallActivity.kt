@@ -74,8 +74,6 @@ class makeCall : AppCompatActivity(), callHandler {
         rtcHandler = webRTCHandler(this, Gson(), firebaseHandler);
         firebaseWebRTCHandler.setTarget(receiverEmail);
         firebaseWebRTCHandler.initWebRTCClient(email);
-        firebaseWebRTCHandler.startCall(receiverEmail, "Offer");
-        firebaseWebRTCHandler.acceptCall(receiverEmail);
 
     }
 
@@ -83,6 +81,19 @@ class makeCall : AppCompatActivity(), callHandler {
     }
 
     override fun onInitOffer(message: callModel) {
+        firebaseWebRTCHandler.acceptCall(receiverEmail)
+//        firebaseWebRTCHandler.pickCall(receiverEmail);
+
+        Log.d("1stmail", email);
+        Log.d("2ndmail", message.targetEmail!!);
+//        if(!message.targetEmail!!.equals(receiverEmail) && !videoOpened) {
+//            videoOpened = true
+            var intent = Intent(this@makeCall, videoCallActivity::class.java)
+            intent.putExtra("userName", receiverName);
+            intent.putExtra("userEmail", receiverEmail);
+            startActivity(intent);
+            finish()
+//        }
     }
 
     override fun onCallAccepted(message: callModel) {
@@ -103,16 +114,16 @@ class makeCall : AppCompatActivity(), callHandler {
     }
 
     override fun onUserAdded(message: callModel) {
-        Log.d("1stmail", email);
-        Log.d("2ndmail", message.targetEmail!!);
-        if(!message.targetEmail!!.equals(receiverEmail) && !videoOpened) {
-            videoOpened = true
-            var intent = Intent(this@makeCall, videoCallActivity::class.java)
-            intent.putExtra("userName", receiverName);
-            intent.putExtra("userEmail", receiverEmail);
-            startActivity(intent);
-            finish()
-        }
+//        Log.d("1stmail", email);
+//        Log.d("2ndmail", message.targetEmail!!);
+//        if(!message.targetEmail!!.equals(receiverEmail) && !videoOpened) {
+//            videoOpened = true
+//            var intent = Intent(this@makeCall, videoCallActivity::class.java)
+//            intent.putExtra("userName", receiverName);
+//            intent.putExtra("userEmail", receiverEmail);
+//            startActivity(intent);
+//            finish()
+//        }
 
     }
 }
