@@ -9,10 +9,14 @@ interface callHandler {
 
     fun onCallReceived(message : callModel);
 
+    fun onInitOffer(message : callModel);
     fun onCallAccepted(message : callModel);
 
     fun onCallRejected(message: callModel);
 
     fun onCallCut(message : callModel);
-    
+
+    fun onUserAdded(message : callModel);
+
+
 }

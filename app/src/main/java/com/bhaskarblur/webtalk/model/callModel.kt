@@ -23,6 +23,18 @@ package com.bhaskarblur.webtalk.model
         this.callData = callData
         this.callType = callType
     }
+
+     constructor(
+         senderEmail: String?,
+         senderName: String?,
+         targetEmail: String?,
+         callType: String
+     ) {
+         this.senderEmail = senderEmail
+         this.senderName = senderName
+         this.targetEmail = targetEmail
+         this.callType = callType
+     }
     constructor()
 
 

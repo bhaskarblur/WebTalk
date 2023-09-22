@@ -24,6 +24,7 @@ import com.bhaskarblur.webtalk.services.mainService
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.callTypes
 import com.bhaskarblur.webtalk.utils.firebaseHandler
+import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
 import com.bhaskarblur.webtalk.utils.helper
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -41,6 +42,7 @@ class mainActivity : AppCompatActivity(), callHandler {
     private var email : String? = ""
     private var username : String? = ""
     private lateinit var firebaseHandler : firebaseHandler;
+    lateinit var service :mainService;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater);
@@ -86,11 +88,12 @@ class mainActivity : AppCompatActivity(), callHandler {
          username = prefs!!.getString("userName","");
         email = prefs!!.getString("userEmail","");
         binding.userName.setText("Hello "+username +" !");
-        firebaseHandler = firebaseHandler(this, userRef, email!!);
-        val service = mainService(this);
-        service.setCallHandler(this, firebaseHandler)
-            service.startService(email!!);
+        firebaseHandler = firebaseHandler(this, userRef, email!!, username!!);
+        service = mainService(this, firebaseWebRTCHandler(
+            this, userRef, email!!, username!!, firebaseHandler)).getInstance();
 
+        service.setCallHandler(this, firebaseHandler)
+            service.startService(email!!, this);
 
 
         //update status of user!
@@ -103,9 +106,9 @@ class mainActivity : AppCompatActivity(), callHandler {
                 snapshot.children.forEach {
                     var user: userPublicModel = it.getValue(userPublicModel::class.java)!!;
 
-//                    if(!email.equals(user.email)) {
+                    if(!email.equals(user.email)) {
                         userList.add(user);
-//                    }
+                    }
 
                 }
                 userAdapter.notifyDataSetChanged();
@@ -134,11 +137,16 @@ class mainActivity : AppCompatActivity(), callHandler {
                 var user = callModel(email, username,
                     userList.get(position).email,null,callTypes.StartedVideoCall.name);
 
-                if (firebaseHandler.callUser(user)) {
+              firebaseHandler.callUser(user)
 
-                        Toast.makeText(this@mainActivity, "Call started",
-                            Toast.LENGTH_SHORT).show()
-                }
+                var intent = Intent(this@mainActivity, makeCall::class.java);
+                intent.putExtra("userName", userList.get(position).username);
+                intent.putExtra("userEmail",  userList.get(position).email);
+                intent.putExtra("callType", callTypes.StartedVideoCall.name);
+                startActivity(intent);
+                firebaseHandler.setAcceptCall(false);
+                overridePendingTransition(R.anim.fade_2, R.anim.fade);
+
             }
 
             override fun onAudioCall(position: Int) {
@@ -146,12 +154,15 @@ class mainActivity : AppCompatActivity(), callHandler {
                 var user = callModel(email, username,
                     userList.get(position).email,null,callTypes.StartedAudioCall.name);
 
-                if (firebaseHandler.callUser(user)) {
+                firebaseHandler.callUser(user)
 
-                    Toast.makeText(this@mainActivity, "Call started",
-                        Toast.LENGTH_SHORT).show()
-                    userRef.child(helper().cleanWord(email.toString())).child("status").setValue("InCall");
-                }
+                var intent = Intent(this@mainActivity, makeCall::class.java);
+                intent.putExtra("userName", userList.get(position).username);
+                intent.putExtra("userEmail",  userList.get(position).email);
+                intent.putExtra("callType", callTypes.StartedAudioCall.name);
+                startActivity(intent);
+                firebaseHandler.setAcceptCall(false);
+                overridePendingTransition(R.anim.fade_2, R.anim.fade);
             }
 
         })
@@ -217,15 +228,20 @@ class mainActivity : AppCompatActivity(), callHandler {
 
     }
 
+    override fun onInitOffer(message: callModel) {
+    }
+
     override fun onCallAccepted(message: callModel) {
-        TODO("Not yet implemented")
+
     }
 
     override fun onCallRejected(message: callModel) {
-        TODO("Not yet implemented")
+
     }
 
     override fun onCallCut(message: callModel) {
-        TODO("Not yet implemented")
+    }
+
+    override fun onUserAdded(message: callModel) {
     }
 }

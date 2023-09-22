@@ -13,13 +13,28 @@ import androidx.core.app.NotificationCompat
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.firebaseHandler
+import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
+import com.bhaskarblur.webtalk.utils.webRTCHandler
+import org.webrtc.SurfaceViewRenderer
 
 class mainService : Service {
 
+
+    private  var instance : mainService ?= null;
 private var isRunning = false;
     private var userEmail : String? = null;
     private lateinit var callHandler : callHandler;
     private lateinit var notificationManager: NotificationManager;
+    var localSurfaceView : SurfaceViewRenderer? = null;
+    var remoteSurfaceView : SurfaceViewRenderer? = null;
+    lateinit var webRTCHandler : webRTCHandler;
+    lateinit var firebaseWebRTCHandler: firebaseWebRTCHandler;
+    fun getInstance(): mainService {
+        if(instance == null) {
+            instance = mainService();
+        }
+        return instance!!;
+    }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
 
@@ -42,6 +57,8 @@ private var isRunning = false;
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(NotificationManager::class.java);
+        firebaseWebRTCHandler.initWebRTCClient(userEmail!!);
+
     }
     private fun handleStartService(intent: Intent?) {
 
@@ -50,8 +67,6 @@ private var isRunning = false;
             userEmail = intent!!.getStringExtra("userEmail")!!;
             Log.d("Service has been started2", "true2");
             startServiceWithNotification();
-
-
 
         }
 
@@ -75,8 +90,9 @@ private var isRunning = false;
 
         handler.checkIncomingCall(this.callHandler);
     }
-    private lateinit var context: Context;
-    constructor(context : Context) {
+    private  var context: Context? = null;
+    constructor(context : Context, webRTCHandler: firebaseWebRTCHandler) {
+        this.firebaseWebRTCHandler = webRTCHandler;
         this.context = context;
     }
 
@@ -89,9 +105,9 @@ private var isRunning = false;
         try {
             Log.d("serviceStarted", intent.getStringExtra("userEmail").toString());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent);
+                context!!.startForegroundService(intent);
             } else {
-                context.startService(intent);
+                context!!.startService(intent);
             }
         }
         catch (e:Exception) {
@@ -99,7 +115,7 @@ private var isRunning = false;
         }
     }
 
-    fun startService(email: String) {
+    fun startService(email: String, context: Context) {
         Log.d("service",email);
         Thread {
             var intent = Intent(context, mainService::class.java);
@@ -110,4 +126,6 @@ private var isRunning = false;
         }.start()
 
     }
+
+
 }
