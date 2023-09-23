@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -33,8 +32,6 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.gson.Gson
-import org.webrtc.SessionDescription
 
 
 class mainActivity : AppCompatActivity(), callHandler {
@@ -50,6 +47,7 @@ class mainActivity : AppCompatActivity(), callHandler {
     private lateinit var firebaseHandler : firebaseHandler;
     lateinit var service :mainService;
     private var target: String = ""
+    private var targetName: String = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater);
@@ -59,7 +57,7 @@ class mainActivity : AppCompatActivity(), callHandler {
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         checkAndRequestPermissions()
         manageLogic();
-        loadData();
+//        loadData();
     }
 
 
@@ -99,8 +97,8 @@ class mainActivity : AppCompatActivity(), callHandler {
         firebaseWebRTCHandler = firebaseWebRTCHandler(this,userRef, email!!,
             username!! , firebaseHandler);
 
+        firebaseWebRTCHandler.initWebRTCClient(email!!);
         service = mainService(this, firebaseWebRTCHandler).getInstance();
-
         service.setCallHandler(this, firebaseHandler)
             service.startService(email!!, this);
 
@@ -130,7 +128,7 @@ class mainActivity : AppCompatActivity(), callHandler {
         });
 
 
-        rtcHandler = webRTCHandler(this, Gson(), firebaseHandler);
+
 
 
 
@@ -150,12 +148,10 @@ class mainActivity : AppCompatActivity(), callHandler {
 
               firebaseHandler.callUser(user)
 
-                var intent = Intent(this@mainActivity, makeCall::class.java);
+                var intent = Intent(this@mainActivity, videoCallActivity::class.java)
                 intent.putExtra("userName", userList.get(position).username);
-//                intent.putExtra("userEmail",  userList.get(position).email);
-//                intent.putExtra("callType", callTypes.StartedVideoCall.name);
-//                activity(intent);
-//                firebaseHandler.setAcceptCall(false);
+                intent.putExtra("userEmail", userList.get(position).email);
+                startActivity(intent);
                 overridePendingTransition(R.anim.fade_2, R.anim.fade);
 
             }
@@ -168,11 +164,11 @@ class mainActivity : AppCompatActivity(), callHandler {
                 firebaseHandler.callUser(user)
 
                 var intent = Intent(this@mainActivity, makeCall::class.java);
-//                intent.putExtra("userName", userList.get(position).username);
-//                intent.putExtra("userEmail",  userList.get(position).email);
-//                intent.putExtra("callType", callTypes.StartedAudioCall.name);
-//                startActivity(intent);
-//                firebaseHandler.setAcceptCall(false);
+                intent.putExtra("userName", userList.get(position).username);
+                intent.putExtra("userEmail",  userList.get(position).email);
+                intent.putExtra("callType", callTypes.StartedAudioCall.name);
+                startActivity(intent);
+                firebaseHandler.setAcceptCall(false);
                 overridePendingTransition(R.anim.fade_2, R.anim.fade);
             }
 
@@ -180,23 +176,36 @@ class mainActivity : AppCompatActivity(), callHandler {
 
         binding.userRV.adapter = userAdapter;
 
+        binding.rejectbtn.setOnClickListener {
+            userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Online");
+            userRef.child(helper().cleanWord(email.toString())).child("latestEvents").removeValue();
+            binding.callLayout.visibility = View.GONE;
+            firebaseHandler.answerUser(callModel(email, username, target
+                , null, callTypes.Reject.name));
+        }
         binding.acceptbtns.setOnClickListener {
             firebaseWebRTCHandler.setTarget(target);
-            firebaseWebRTCHandler.initWebRTCClient(email!!);
 
             // This creates an offer!
-            firebaseWebRTCHandler.startCall(target, "Offer")
+            firebaseHandler.answerUser(
+                callModel(
+                email, username, target, null, callTypes.Answer.name
+            )
+            )
 
-            // This accepts the call
-            firebaseHandler.answerUser(callModel(email, username, target
-                , null, callTypes.Answer.name));
+            var intent = Intent(this@mainActivity, videoCallActivity::class.java)
+            intent.putExtra("userName", targetName);
+            intent.putExtra("userEmail", target);
+            startActivity(intent);
         }
+
 
     }
 
     override fun finish() {
         super.finish()
-
+        userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Offline");
+        userRef.child(helper().cleanWord(email.toString())).child("latestEvents").removeValue();
     }
 
     override fun onDestroy() {
@@ -235,6 +244,9 @@ class mainActivity : AppCompatActivity(), callHandler {
 
     override fun onResume() {
         super.onResume()
+        loadData();
+        binding.callLayout.visibility = View.GONE
+
     }
     override fun onCallReceived(message: callModel) {
 
@@ -245,13 +257,7 @@ class mainActivity : AppCompatActivity(), callHandler {
             +message.senderName.toString());
 
             target = message.senderEmail!!;
-//            var intent = Intent(this@mainActivity, callScreen::class.java);
-//            intent.putExtra("userName", message.senderName);
-//            intent.putExtra("userEmail", message.senderEmail);
-//            intent.putExtra("callType", message.callType);
-//            startActivity(intent);
-//            firebaseHandler.setAcceptCall(false);
-//            overridePendingTransition(R.anim.fade_2, R.anim.fade);
+            targetName = message.senderName!!;
         }
 
         else {
@@ -260,25 +266,16 @@ class mainActivity : AppCompatActivity(), callHandler {
     }
 
     override fun onInitOffer(message: callModel) {
-        // this initiates another sdp
-//        firebaseWebRTCHandler.a(target)
-        firebaseWebRTCHandler.pickCall(target);
 
     }
 
     override fun onCallAccepted(message: callModel) {
-        Log.d("accepted","yes");
-        rtcHandler.onRemoteSessionReceived(
-            SessionDescription(
-                SessionDescription.Type.ANSWER,
-                message.callData.toString())
-        )
-        Toast.makeText(this, "Call Accepted", Toast.LENGTH_SHORT).show()
 
     }
 
     override fun onCallRejected(message: callModel) {
-
+        userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Online");
+        userRef.child(helper().cleanWord(email.toString())).child("latestEvents").removeValue();
     }
 
     override fun onCallCut(message: callModel) {
@@ -286,5 +283,8 @@ class mainActivity : AppCompatActivity(), callHandler {
 
     override fun onUserAdded(message: callModel) {
 
+    }
+
+    override fun finalCallAccepted(message: callModel) {
     }
 }

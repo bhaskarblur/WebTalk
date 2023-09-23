@@ -3,7 +3,7 @@ package com.bhaskarblur.webtalk.utils
 import com.bhaskarblur.webtalk.model.callModel
 
 enum class callTypes {
-    StartedAudioCall,StartedVideoCall,Offer,Answer,ICECandidate,EndCall
+    StartedAudioCall,StartedVideoCall,Offer,FinalAnswer, Answer,Reject,ICECandidate,EndCall
 }
 interface callHandler {
 
@@ -17,6 +17,8 @@ interface callHandler {
     fun onCallCut(message : callModel);
 
     fun onUserAdded(message : callModel);
+
+    fun finalCallAccepted(message : callModel);
 
 
 }

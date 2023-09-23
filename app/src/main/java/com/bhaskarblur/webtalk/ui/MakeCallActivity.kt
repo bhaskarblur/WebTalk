@@ -6,10 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
-import android.widget.Toast
-import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityMakeCallBinding
-import com.bhaskarblur.webtalk.databinding.ActivityReceiveCallScreenBinding
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.services.mainService
 import com.bhaskarblur.webtalk.utils.callHandler
@@ -19,7 +16,6 @@ import com.bhaskarblur.webtalk.utils.webRTCHandler
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.gson.Gson
-import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
 
 class makeCall : AppCompatActivity(), callHandler {
@@ -97,10 +93,10 @@ class makeCall : AppCompatActivity(), callHandler {
     }
 
     override fun onCallAccepted(message: callModel) {
-        rtcHandler.onRemoteSessionReceived(
-            SessionDescription(SessionDescription.Type.ANSWER,
-                message.callData.toString())
-        )
+//        rtcHandler.onRemoteSessionReceived(
+//            SessionDescription(SessionDescription.Type.ANSWER,
+//                message.callData.toString())
+//        )
         finish()
     }
 
@@ -125,5 +121,9 @@ class makeCall : AppCompatActivity(), callHandler {
 //            finish()
 //        }
 
+    }
+
+    override fun finalCallAccepted(message: callModel) {
+        TODO("Not yet implemented")
     }
 }

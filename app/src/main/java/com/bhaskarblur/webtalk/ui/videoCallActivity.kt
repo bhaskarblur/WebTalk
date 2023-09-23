@@ -4,15 +4,16 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.util.Log
 import android.widget.Toast
-import com.bhaskarblur.webtalk.databinding.ActivityMakeCallBinding
+import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityVideoCallBinding
 import com.bhaskarblur.webtalk.model.callModel
+import com.bhaskarblur.webtalk.model.isValid
 import com.bhaskarblur.webtalk.services.mainService
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
-import com.bhaskarblur.webtalk.utils.webRTCHandler
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.gson.Gson
@@ -30,8 +31,11 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     lateinit var userName : String;
     lateinit var firebaseWebRTCHandler: firebaseWebRTCHandler;
     lateinit var firebaseHandler: firebaseHandler;
-    lateinit var rtcHandler: webRTCHandler;
     private var gson  = Gson();
+    private var offerMade = false;
+    private var accepted = false;
+    private var videoHide = false;
+    private var micMute = false;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityVideoCallBinding.inflate(layoutInflater);
@@ -49,6 +53,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
 
         binding.cutCall.setOnClickListener {
             firebaseWebRTCHandler.endCall();
+
             finish();
         }
 
@@ -67,18 +72,44 @@ class videoCallActivity : AppCompatActivity(), callHandler {
 
         firebaseWebRTCHandler.setTarget(receiverEmail);
         firebaseWebRTCHandler.initWebRTCClient(email);
-
-
-        service = mainService(this, firebaseWebRTCHandler).getInstance()
-        service.setCallHandler(this, firebaseHandler);
-
-        rtcHandler = webRTCHandler(this, Gson(), firebaseHandler);
-            service.localSurfaceView = binding.userCamera;
-        service.remoteSurfaceView = binding.otherUserCamera;
         firebaseWebRTCHandler.initLocalSurfaceView(binding.userCamera, true);
         firebaseWebRTCHandler.initRemoteSurfaceView(binding.otherUserCamera);
+        service = mainService(this, firebaseWebRTCHandler).getInstance()
+        service.setCallHandler(this, firebaseHandler);
+        ;
+            service.localSurfaceView = binding.userCamera;
+        service.remoteSurfaceView = binding.otherUserCamera;
 
 
+        binding.swapbtn.setOnClickListener{
+            firebaseWebRTCHandler.switchCamera();
+        }
+
+        binding.videobtn.setOnClickListener {
+            if(!videoHide) {
+                binding.videobtn.setImageResource(R.drawable.videooff);
+                firebaseWebRTCHandler.toggleVideo(true);
+                videoHide = true;
+            }
+            else {
+                binding.videobtn.setImageResource(R.drawable.videoon);
+                firebaseWebRTCHandler.toggleVideo(false);
+                videoHide=false;
+            }
+        }
+
+        binding.micbtn.setOnClickListener {
+            if(!micMute) {
+                binding.micbtn.setImageResource(R.drawable.microphoneoff);
+                firebaseWebRTCHandler.toggleAudio(true);
+                micMute = true;
+            }
+            else {
+                binding.micbtn.setImageResource(R.drawable.microphone);
+                firebaseWebRTCHandler.toggleAudio(false);
+                micMute=false;
+            }
+        }
     }
 
     override fun onBackPressed() {
@@ -89,23 +120,38 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     }
 
     override fun onInitOffer(message: callModel) {
+        if(message.isValid() && !offerMade) {
+            offerMade = true
+            Toast.makeText(this, "Offered " + message.senderEmail, Toast.LENGTH_SHORT).show()
+            Log.d("offered", message.senderEmail.toString());
+            firebaseWebRTCHandler.webRTCHandler.onRemoteSessionReceived(
+                SessionDescription(
+                    SessionDescription.Type.OFFER,
+                    message.callData.toString()
+                )
+            )
 
+            firebaseWebRTCHandler.acceptCall(message.senderEmail!!);
+        }
     }
 
     override fun onCallAccepted(message: callModel) {
+
+        firebaseWebRTCHandler.startCall(receiverEmail, "Offer")
     }
 
     override fun onCallRejected(message: callModel) {
     }
 
     override fun onCallCut(message: callModel) {
+        firebaseWebRTCHandler.webRTCHandler.closeConnection();
         firebaseHandler.changeMyStatus("Online");
         finish();
 
     }
 
     override fun onUserAdded(message: callModel) {
-        Toast.makeText(this, "user added!", Toast.LENGTH_SHORT).show()
+        Log.d("usedAdded", message.senderEmail.toString());
         val candidate : IceCandidate? = try {
             gson.fromJson(message.callData.toString(),IceCandidate::class.java);
 
@@ -114,7 +160,23 @@ class videoCallActivity : AppCompatActivity(), callHandler {
         }
 
         candidate?.let {
-            rtcHandler.sendIceCandidate(receiverEmail, it);
+            firebaseWebRTCHandler.webRTCHandler.addIceCandidateToPeer(candidate);
+//            firebaseWebRTCHandler.webRTCHandler.sendIceCandidate(receiverEmail, it);
+        }
+    }
+
+    override fun finalCallAccepted(message: callModel) {
+        if(message.isValid() && !accepted) {
+            accepted = true;
+            Log.d("acceptedFinal", message.senderEmail.toString());
+            firebaseWebRTCHandler.webRTCHandler.onRemoteSessionReceived(
+                SessionDescription(
+                    SessionDescription.Type.ANSWER,
+                    message.callData.toString()
+                )
+            )
+
+            Toast.makeText(this, "Call Accepted", Toast.LENGTH_SHORT).show()
         }
     }
 }

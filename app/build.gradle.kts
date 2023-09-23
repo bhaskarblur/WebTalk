@@ -4,6 +4,7 @@ plugins {
     id("com.google.gms.google-services")
     id("com.google.dagger.hilt.android")
     kotlin("kapt")
+    id ("dagger.hilt.android.plugin")
 }
 
 android {
@@ -32,6 +33,7 @@ android {
     }
     buildFeatures {
         viewBinding  = true
+        dataBinding = true
     }
 
     compileOptions {
@@ -44,6 +46,8 @@ android {
 }
 
 dependencies {
+    implementation ("com.google.dagger:dagger:2.27")
+    annotationProcessor ("com.google.dagger:dagger-compiler:2.27")
     implementation ("com.mesibo.api:webrtc:1.0.5")
     implementation ("com.google.android.flexbox:flexbox:3.0.0")
     // implementation 'me.bendik.simplerangeview:simplerangeview:0.2.0'

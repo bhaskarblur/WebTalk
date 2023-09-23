@@ -5,14 +5,12 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.util.Log
 import android.widget.Toast
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityReceiveCallScreenBinding
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.services.mainService
 import com.bhaskarblur.webtalk.utils.callHandler
-import com.bhaskarblur.webtalk.utils.callTypes
 import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
 import com.bhaskarblur.webtalk.utils.helper
@@ -21,7 +19,6 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.gson.Gson
 import org.webrtc.IceCandidate
-import org.webrtc.SessionDescription
 
 class callScreen : AppCompatActivity(), callHandler {
 
@@ -61,7 +58,7 @@ class callScreen : AppCompatActivity(), callHandler {
         binding.acceptCall.setOnClickListener {
             firebaseWebRTCHandler.setTarget(receiverEmail);
             firebaseWebRTCHandler.initWebRTCClient(email);
-            firebaseWebRTCHandler.startCall(receiverEmail, "Offer")
+//            firebaseWebRTCHandler.startCall(receiverEmail, "Offer")
             var intent = Intent(this@callScreen, videoCallActivity::class.java)
             intent.putExtra("userName", receiverName);
             intent.putExtra("userEmail",  receiverEmail);
@@ -143,7 +140,11 @@ class callScreen : AppCompatActivity(), callHandler {
         Toast.makeText(this, "user added "+candidate!!.sdp.toString() , Toast.LENGTH_SHORT).show()
 
         candidate?.let {
-            rtcHandler.sendIceCandidate(receiverEmail, it);
+//            rtcHandler.sendIceCandidate(receiverEmail, it);
         }
+    }
+
+    override fun finalCallAccepted(message: callModel) {
+        TODO("Not yet implemented")
     }
 }

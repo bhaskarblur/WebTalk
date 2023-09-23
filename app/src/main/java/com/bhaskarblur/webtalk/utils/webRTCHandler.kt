@@ -32,10 +32,23 @@ class webRTCHandler  {
     private val peerConnectionFactory by lazy { createPeerConnectionFactory() }
     private var peerConnectionInstance : PeerConnection? = null;
     private val iceServer = listOf(
-        PeerConnection.IceServer.builder("turn:a.relay.metered.ca:443?transport=tcp")
-            .setUsername("83eebabf8b4cce9d5dbcb649")
-            .setPassword("2D7JvfkOQtBdYW3R").createIceServer()
+//        PeerConnection.IceServer.builder("turn:a.relay.metered.ca:443?transport=tcp")
+//            .setUsername("83eebabf8b4cce9d5dbcb649")
+//            .setPassword("2D7JvfkOQtBdYW3R").createIceServer(),
+                PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
     )
+
+    val rtcConfig = PeerConnection.RTCConfiguration(
+        arrayListOf(
+            PeerConnection.IceServer.builder("stun:relay.backups.cz").createIceServer(),
+            PeerConnection.IceServer.builder("turn:relay.backups.cz?transport=tcp")
+
+                .setUsername("webrtc")
+                .setPassword("webrtc").createIceServer(),
+        )
+    ).apply {
+        // it's very important to use new unified sdp semantics PLAN_B is deprecated
+    }
     private lateinit var userEmail : String;
     private lateinit var userName : String;
     private val localVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
@@ -45,7 +58,7 @@ class webRTCHandler  {
     private lateinit var localSurfaceView : SurfaceViewRenderer;
     private lateinit var remoteSurfaceView: SurfaceViewRenderer;
     private var localStream : MediaStream? = null
-    private var localTrackId = "";
+    private var localTrackId = "_";
     private var localStreamId = "";
     private var localAudioTrack: AudioTrack? = null
     private var localVideoTrack: VideoTrack? = null
@@ -75,7 +88,7 @@ class webRTCHandler  {
     }
 
     private fun createPeerConnection(observer: PeerConnection.Observer): PeerConnection? {
-        return peerConnectionFactory.createPeerConnection(iceServer, observer)
+        return peerConnectionFactory.createPeerConnection(rtcConfig, observer)
 
     }
 
@@ -94,6 +107,7 @@ class webRTCHandler  {
             setEnableHardwareScaler(true)
             init(eglBaseContext, object : RendererEvents{
                 override fun onFirstFrameRendered() {
+                    Log.d("firstframe","y");
                 }
 
                 override fun onFrameResolutionChanged(p0: Int, p1: Int, p2: Int) {
@@ -106,7 +120,7 @@ class webRTCHandler  {
 
     fun initRemoteSurfaceView(localview : SurfaceViewRenderer ) {
         this.remoteSurfaceView = localview;
-        initSurfaceView(localview)
+        initSurfaceView(remoteSurfaceView)
     }
     fun initLocalSurfaceView(localview : SurfaceViewRenderer, isVideoCall : Boolean) {
         this.localSurfaceView = localview;
@@ -122,6 +136,9 @@ class webRTCHandler  {
 
         localAudioTrack = peerConnectionFactory.createAudioTrack(localTrackId+"_audio", localAudioSource)
         localStream?.addTrack(localAudioTrack);
+        localStream?.videoTracks?.forEach({
+            peerConnectionInstance?.addTrack(it);
+        })
         peerConnectionInstance?.addStream(localStream);
     }
 
@@ -190,6 +207,7 @@ class webRTCHandler  {
                             success =
                                 true;
                             Log.d("sdpnew", desc?.description.toString())
+
                             firebaseHandler.callUser(
                                 callModel(userEmail, userName, target, desc?.description
                                     , callType)
@@ -224,33 +242,35 @@ class webRTCHandler  {
 
     fun answer(target:String): Boolean {
         var success = false;
-        peerConnectionInstance!!.createAnswer(object  : SdpObserver {
+        peerConnectionInstance?.createAnswer(object  : SdpObserver {
             override fun onCreateSuccess(desc: SessionDescription?) {
+
                 peerConnectionInstance?.setLocalDescription(object : SdpObserver {
                     override fun onCreateSuccess(p0: SessionDescription?) {
                         TODO("Not yet implemented")
                     }
 
                     override fun onSetSuccess() {
+                        Log.d("success", "success!!");
                         firebaseHandler.answerUser(  callModel(
                             userEmail, userName, target, desc?. description
-                            , callTypes.Answer.name));
+                            , callTypes.FinalAnswer.name));
                         success=true;
                     }
 
                     override fun onCreateFailure(p0: String?) {
-                        TODO("Not yet implemented")
+                        Log.d("statusFailed_", p0.toString());
                     }
 
                     override fun onSetFailure(p0: String?) {
-                        TODO("Not yet implemented")
+                        Log.d("statusFailed_2", p0.toString());
                     }
 
                 }, desc)
             }
 
             override fun onSetSuccess() {
-                TODO("Not yet implemented")
+                Log.d("successet", "SetSuccess")
             }
 
             override fun onCreateFailure(p0: String?) {
@@ -258,18 +278,35 @@ class webRTCHandler  {
             }
 
             override fun onSetFailure(p0: String?) {
-                TODO("Not yet implemented")
+                Log.d("statusFailed3", p0.toString());
             }
         }, mediaConstraint)
         Log.d("acceptresult",success.toString());
-//        Toast.makeText(context, "Accepted: "+success.toString(),Toast.LENGTH_SHORT
-//        ).show();
         return success;
     }
 
     fun onRemoteSessionReceived(sdp : SessionDescription)
     {
-        peerConnectionInstance?.setRemoteDescription(sdpObserver(),sdp);
+        Log.d("remote received", sdp.type.toString());
+        peerConnectionInstance?.setRemoteDescription(object : SdpObserver {
+            override fun onCreateSuccess(p0: SessionDescription?) {
+                Log.d("remotedesc1", p0?.type.toString());
+            }
+
+            override fun onSetSuccess() {
+            }
+
+            override fun onCreateFailure(p0: String?) {
+                Log.d("remotedesc2", p0!!);
+            }
+
+            override fun onSetFailure(p0: String?) {
+                Log.d("remotedesc3", p0!!);
+
+            }
+
+        },sdp)
+
 
     }
 

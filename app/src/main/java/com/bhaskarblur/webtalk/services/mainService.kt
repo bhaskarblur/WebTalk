@@ -1,6 +1,5 @@
 package com.bhaskarblur.webtalk.services
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -85,8 +84,8 @@ private var isRunning = false;
     }
 
 
-    fun setCallHandler(callHandler: callHandler, handler: firebaseHandler) {
-        this.callHandler = callHandler;
+    fun setCallHandler(callHandler: callHandler?, handler: firebaseHandler) {
+        this.callHandler = callHandler!!;
 
         handler.checkIncomingCall(this.callHandler);
     }
@@ -111,7 +110,7 @@ private var isRunning = false;
             }
         }
         catch (e:Exception) {
-            Log.d("err", e.message.toString());
+            Log.d("err_", e.message.toString());
         }
     }
 
