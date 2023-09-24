@@ -95,7 +95,8 @@ class videoCallActivity : AppCompatActivity(), callHandler {
 
         binding.cutCall.setOnClickListener {
             firebaseWebRTCHandler.endCall();
-
+            service.stopForeground(true);
+            service.stopSelf();
             finish();
         }
 
@@ -324,8 +325,18 @@ class videoCallActivity : AppCompatActivity(), callHandler {
         }
     }
 
+    override fun finish() {
+        super.finish()
+        firebaseWebRTCHandler.endCall();
+        service.stopForeground(true);
+        service.stopSelf();
+
+    }
     override fun onDestroy() {
         super.onDestroy()
         firebaseWebRTCHandler.endCall();
+        service.stopForeground(true);
+        service.stopSelf();
+
     }
 }
