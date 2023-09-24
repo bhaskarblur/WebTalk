@@ -37,6 +37,7 @@ class makeCall : AppCompatActivity(), callHandler {
     lateinit var firebaseHandler: firebaseHandler;
     lateinit var rtcHandler: webRTCHandler;
     private var videoOpened = false;
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMakeCallBinding.inflate(layoutInflater);
@@ -115,7 +116,7 @@ class makeCall : AppCompatActivity(), callHandler {
     }
 
     override fun onCallRejected(message: callModel) {
-        Toast.makeText(this, "Call Rejected", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this, "Call Rejected", Toast.LENGTH_SHORT).show()
         firebaseHandler.changeMyStatus("Online");
         finish();
     }

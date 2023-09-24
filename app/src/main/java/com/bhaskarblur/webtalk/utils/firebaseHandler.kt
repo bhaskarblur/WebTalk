@@ -1,6 +1,7 @@
 package com.bhaskarblur.webtalk.utils
 
 import android.content.Context
+import android.content.Intent
 import android.renderscript.Sampler.Value
 import android.util.Log
 import android.widget.Toast
@@ -191,6 +192,8 @@ class firebaseWebRTCHandler {
     private lateinit var firebaseHandler: firebaseHandler;
     private lateinit var remoteView : SurfaceViewRenderer;
     private lateinit var target: String;
+    private var isPreviousStateVideo = true;
+
     constructor(context: Context, dbRef: DatabaseReference,currentUser : String, currentUserName:String, firebaseHandler: firebaseHandler) {
         this.context = context
         this.dbRef = dbRef
@@ -200,6 +203,9 @@ class firebaseWebRTCHandler {
         this.firebaseHandler = firebaseHandler;
     }
 
+    companion object {
+        var screenPermissionIntent: Intent? = null;
+    }
     fun setTarget(target: String) {
         firebaseHandler.target = target;
         this.target = target;
@@ -334,6 +340,7 @@ class firebaseWebRTCHandler {
 
     fun toggleVideo(shouldHide : Boolean) {
         webRTCHandler.toggleVideo(shouldHide);
+        isPreviousStateVideo = !shouldHide
     }
 
 

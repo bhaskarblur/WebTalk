@@ -1,7 +1,14 @@
 package com.bhaskarblur.webtalk.utils
 
 import android.content.Context
+import android.content.Intent
+import android.media.projection.MediaProjection
+import android.os.Handler
+import android.provider.MediaStore.Video
+import android.util.DisplayMetrics
 import android.util.Log
+import android.view.Window
+import android.view.WindowManager
 import android.widget.Toast
 import com.bhaskarblur.webtalk.model.callModel
 import com.google.gson.Gson
@@ -17,6 +24,7 @@ import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RendererCommon.RendererEvents
+import org.webrtc.ScreenCapturerAndroid
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceTextureHelper
@@ -26,6 +34,7 @@ import org.webrtc.VideoTrack
 
 class webRTCHandler  {
 
+    private var localScreenShareVideoTrack: VideoTrack? = null
     private lateinit var context : Context;
     private val gsonObject : Gson;
     private val eglBaseContext = EglBase.create().eglBaseContext;
@@ -53,6 +62,7 @@ class webRTCHandler  {
     private val localVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
     private val localAudioSource by lazy { peerConnectionFactory.createAudioSource(MediaConstraints())}
     private lateinit var videoCapturer : CameraVideoCapturer;
+    private lateinit var screenCapturer : VideoCapturer;
     private var surfaceTextureHelper: SurfaceTextureHelper?=null
     private lateinit var localSurfaceView : SurfaceViewRenderer;
     private lateinit var remoteSurfaceView: SurfaceViewRenderer;
@@ -62,7 +72,8 @@ class webRTCHandler  {
     private var localAudioTrack: AudioTrack? = null
     private var localVideoTrack: VideoTrack? = null
     private var firebaseHandler : firebaseHandler ;
-
+    private var permissionIntent : Intent? = null
+    private val localScreenVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
     private val mediaConstraint = MediaConstraints().apply {
         mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo","true"))
         mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio","true"))
@@ -329,6 +340,7 @@ class webRTCHandler  {
     fun closeConnection() {
         try {
             videoCapturer?.dispose();
+            screenCapturer?.dispose()
             localStream?.dispose();
             peerConnectionInstance?.close();
         } catch (e: Exception){
@@ -361,5 +373,74 @@ class webRTCHandler  {
 
         }
     }
+
+    private fun createScreenCapturer() : VideoCapturer {
+        return ScreenCapturerAndroid(permissionIntent, object : MediaProjection.Callback() {
+            override fun onStop() {
+                super.onStop()
+
+            }
+        })
+    }
+    private fun setPermissionIntent(screenPermissionIntent: Intent) {
+        this.permissionIntent = screenPermissionIntent
+    }
+    fun setScreenCapturer(screenPermissionIntent: Intent) {
+        setPermissionIntent(screenPermissionIntent);
+
+    }
+
+    fun toggleScreenShare(start: Boolean) {
+        if(start) {
+            Log.d("Startedscreen_2", "yes")
+            startScreenCapturing();
+        }
+        else {
+            stopScreenCapturing();
+        }
+    }
+
+    private fun startScreenCapturing() {
+        val displayMetrics = DisplayMetrics()
+        val windowsManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        windowsManager.defaultDisplay.getMetrics(displayMetrics)
+
+        val screenWidthPixels = displayMetrics.widthPixels
+        val screenHeightPixels = displayMetrics.heightPixels
+
+        val surfaceTextureHelper = SurfaceTextureHelper.create(
+            Thread.currentThread().name,eglBaseContext
+        )
+
+        Log.d("Startedscreen", "yes")
+        screenCapturer = createScreenCapturer()
+        screenCapturer.initialize(
+            surfaceTextureHelper,context,localScreenVideoSource.capturerObserver
+        )
+        screenCapturer.startCapture(screenWidthPixels,screenHeightPixels,15)
+
+        localScreenShareVideoTrack =
+            peerConnectionFactory.createVideoTrack(localTrackId+"_video",localScreenVideoSource)
+        localScreenShareVideoTrack?.addSink(localSurfaceView)
+        localStream?.addTrack(localScreenShareVideoTrack)
+        peerConnectionInstance?.addStream(localStream)
+    }
+
+    private fun stopScreenCapturing() {
+
+        screenCapturer?.stopCapture()
+        screenCapturer?.dispose()
+        localScreenShareVideoTrack?.removeSink(localSurfaceView)
+        localSurfaceView.clearImage()
+        localStream!!.removeTrack(localScreenShareVideoTrack)
+        startCapturingCamera(localSurfaceView)
+        localAudioTrack = peerConnectionFactory.createAudioTrack(localTrackId+"_audio", localAudioSource)
+        localStream?.addTrack(localAudioTrack);
+        localStream?.videoTracks?.forEach({
+//            peerConnectionInstance?.addTrack(it);
+        })
+        peerConnectionInstance?.addStream(localStream);
+    }
+
 
 }

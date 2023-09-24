@@ -67,6 +67,11 @@ class callScreen : AppCompatActivity(), callHandler {
                     email, userName, receiverEmail, null, callTypes.Answer.name
                 )
             )
+            firebaseHandler.answerUser(
+                callModel(
+                    email, userName, email, null, "Picked"
+                )
+            )
             var intent = Intent(this@callScreen, videoCallActivity::class.java)
             intent.putExtra("userName", receiverName);
             intent.putExtra("userEmail",  receiverEmail);

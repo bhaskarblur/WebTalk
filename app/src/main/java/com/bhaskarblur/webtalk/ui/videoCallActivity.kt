@@ -1,7 +1,14 @@
 package com.bhaskarblur.webtalk.ui
 
 import android.R.attr.width
+import android.app.Activity
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.PorterDuff
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
@@ -9,13 +16,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityVideoCallBinding
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.model.isValid
 import com.bhaskarblur.webtalk.services.mainService
+import com.bhaskarblur.webtalk.services.mainServiceActions
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
@@ -43,7 +56,28 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     private var videoHide = false;
     private var micMute = false;
     private var speaker = false;
+    private var isSharing = false;
     private var callType = "";
+
+    private lateinit var requestScreenCapture : ActivityResultLauncher<Intent>
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    override fun onStart() {
+        super.onStart()
+        requestScreenCapture = registerForActivityResult(ActivityResultContracts
+            .StartActivityForResult()) {
+                if(it.resultCode == Activity.RESULT_OK) {
+                    service.startService(email, this, mainServiceActions.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+                    val intent = it.data;
+                    service.setscreenPermissionIntent(intent!!)
+//                    service.toggleScreenShare(true, this@videoCallActivity);
+                    isSharing = true
+
+                }
+        }
+
+    }
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityVideoCallBinding.inflate(layoutInflater);
@@ -67,6 +101,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun loadData() {
         email = prefs!!.getString("userEmail","")!!;
         userName = prefs!!.getString("userName","")!!;
@@ -106,7 +141,8 @@ class videoCallActivity : AppCompatActivity(), callHandler {
         }
         service = mainService(this, firebaseWebRTCHandler).getInstance()
         service.setCallHandler(this, firebaseHandler);
-        service.startService(email, this);
+        service.setWebRtchandler(firebaseWebRTCHandler.webRTCHandler)
+        service.startService(email, this, mainServiceActions.START_SERVICE);
             service.localSurfaceView = binding.userCamera;
         service.remoteSurfaceView = binding.otherUserCamera;
 
@@ -119,11 +155,17 @@ class videoCallActivity : AppCompatActivity(), callHandler {
                 binding.videobtn.setImageResource(R.drawable.videooff);
                 firebaseWebRTCHandler.toggleVideo(true);
                 videoHide = true;
+                binding.paustext.visibility = View.VISIBLE
+                binding.videobtn.setBackgroundTintList(getResources().getColorStateList(R.color.white));
+                binding.videobtn.setColorFilter(ContextCompat.getColor(this, R.color.blackLight), android.graphics.PorterDuff.Mode.SRC_IN);
             }
             else {
                 binding.videobtn.setImageResource(R.drawable.videoon);
                 firebaseWebRTCHandler.toggleVideo(false);
+                binding.paustext.visibility = View.GONE
                 videoHide=false;
+                binding.videobtn.setBackgroundTintList(getResources().getColorStateList(R.color.blackLight));
+                binding.videobtn.setColorFilter(ContextCompat.getColor(this, R.color.white), android.graphics.PorterDuff.Mode.SRC_IN);
             }
         }
 
@@ -132,11 +174,15 @@ class videoCallActivity : AppCompatActivity(), callHandler {
                 binding.micbtn.setImageResource(R.drawable.microphoneoff);
                 firebaseWebRTCHandler.toggleAudio(true);
                 micMute = true;
+                binding.micbtn.setBackgroundTintList(getResources().getColorStateList(R.color.white));
+                binding.micbtn.setColorFilter(ContextCompat.getColor(this, R.color.blackLight), android.graphics.PorterDuff.Mode.SRC_IN);
             }
             else {
                 binding.micbtn.setImageResource(R.drawable.microphone);
                 firebaseWebRTCHandler.toggleAudio(false);
                 micMute=false;
+                binding.micbtn.setBackgroundTintList(getResources().getColorStateList(R.color.blackLight));
+                binding.micbtn.setColorFilter(ContextCompat.getColor(this, R.color.white), android.graphics.PorterDuff.Mode.SRC_IN);
             }
         }
 
@@ -145,15 +191,67 @@ class videoCallActivity : AppCompatActivity(), callHandler {
                 binding.speakericon.setImageResource(R.drawable.speakericon);
                 service.toggleAudioSpeakerMode(false);
                 speaker = true;
+                binding.speakericon.setBackgroundTintList(getResources().getColorStateList(R.color.white));
+                binding.speakericon.setColorFilter(ContextCompat.getColor(this, R.color.blackLight), android.graphics.PorterDuff.Mode.SRC_IN);
 
             }
             else {
                 speaker = false;
                 service.toggleAudioSpeakerMode(true);
                 binding.speakericon.setImageResource(R.drawable.mobileicon);
+                binding.speakericon.setBackgroundTintList(getResources().getColorStateList(R.color.blackLight));
+                binding.speakericon.setColorFilter(ContextCompat.getColor(this, R.color.white), android.graphics.PorterDuff.Mode.SRC_IN);
+            }
+        }
+
+        binding.broadcastbtn.setOnClickListener {
+            if(!isSharing) {
+                isSharing = true
+
+                AlertDialog.Builder(this@videoCallActivity)
+                    .setTitle("Screen sharing?")
+                    .setMessage("Do you want to present your screen to the other user?")
+                    .setPositiveButton("Yes", object : DialogInterface.OnClickListener{
+                        override fun onClick(p0: DialogInterface?, p1: Int) {
+                            isSharing = false
+                            binding.broadcastbtn.setImageResource(R.drawable.screenoff)
+                            binding.broadcastbtn.setBackgroundTintList(getResources().getColorStateList(R.color.white));
+                            binding.broadcastbtn.setColorFilter(ContextCompat.getColor(this@videoCallActivity, R.color.blackLight), PorterDuff.Mode.SRC_IN);
+                            binding.videobtn.visibility = View.GONE
+                            binding.swapbtn.visibility = View.GONE
+                            startScreenShare();
+                        }
+
+                    })
+                    .setNegativeButton("No", object : DialogInterface.OnClickListener{
+                        override fun onClick(p0: DialogInterface?, p1: Int) {
+
+                        }
+                        }).show();
+
+            }
+            else {
+                isSharing = false
+                binding.videobtn.visibility = View.VISIBLE
+                binding.swapbtn.visibility = View.VISIBLE
+//                service.toggleScreenShare(false, this);
+                binding.broadcastbtn.setImageResource(R.drawable.screenon)
+                binding.broadcastbtn.setBackgroundTintList(getResources().getColorStateList(R.color.blackLight));
+                binding.broadcastbtn.setColorFilter(ContextCompat.getColor(this, R.color.white), android.graphics.PorterDuff.Mode.SRC_IN);
             }
         }
     }
+
+    private fun startScreenShare() {
+        val screenManager = application.getSystemService(
+            Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+
+        val captureIntent = screenManager.createScreenCaptureIntent();
+        requestScreenCapture.launch(captureIntent);
+
+
+    }
+
 
     override fun onBackPressed() {
     }
@@ -188,7 +286,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     }
 
     override fun onCallCut(message: callModel) {
-        Toast.makeText(this, "Call Ended", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this, "Call Ended", Toast.LENGTH_SHORT).show()
         firebaseWebRTCHandler.webRTCHandler.closeConnection();
         firebaseHandler.changeMyStatus("Online");
         finish();

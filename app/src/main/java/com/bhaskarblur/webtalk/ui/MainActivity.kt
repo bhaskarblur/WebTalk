@@ -21,6 +21,7 @@ import com.bhaskarblur.webtalk.adapter.usersAdapter
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.model.isValid
 import com.bhaskarblur.webtalk.services.mainService
+import com.bhaskarblur.webtalk.services.mainServiceActions
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.callTypes
 import com.bhaskarblur.webtalk.utils.firebaseHandler
@@ -47,6 +48,7 @@ class mainActivity : AppCompatActivity(), callHandler {
     private lateinit var firebaseHandler : firebaseHandler;
     lateinit var service :mainService;
     private var target: String = ""
+    private var accepted = false;
     private var targetName: String = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +102,7 @@ class mainActivity : AppCompatActivity(), callHandler {
         firebaseWebRTCHandler.initWebRTCClient(email!!);
         service = mainService(this, firebaseWebRTCHandler).getInstance();
         service.setCallHandler(this, firebaseHandler)
-            service.startService(email!!, this);
+            service.startService(email!!, this, mainServiceActions.START_SERVICE);
 
 
         //update status of user!
@@ -244,14 +246,15 @@ class mainActivity : AppCompatActivity(), callHandler {
 
     override fun onResume() {
         super.onResume()
+        accepted = false;
         loadData();
         binding.callLayout.visibility = View.GONE
 
     }
     override fun onCallReceived(message: callModel) {
 
-        if(message.isValid()) {
-
+        if(message.isValid() && !accepted) {
+            accepted = true;
             var intent = Intent(this@mainActivity, callScreen::class.java)
             intent.putExtra("userName", message.senderName);
             intent.putExtra("userEmail",message.senderEmail);

@@ -5,7 +5,7 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
-
+    <uses-permission android:name="ndroid.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -29,6 +29,8 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:usesCleartextTraffic="true"
+        android:foregroundServiceType="mediaProjection"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.WebTalk"
@@ -59,6 +61,10 @@
             android:exported="false" />
         <activity
             android:name=".ui.splashScreen"
+            android:enabled="true"
+            tools:targetApi="q"
+            android:stopWithTask="true"
+            android:foregroundServiceType="mediaProjection"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
