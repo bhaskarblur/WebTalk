@@ -281,7 +281,6 @@ class mainActivity : AppCompatActivity(), callHandler {
     override fun onCallRejected(message: callModel) {
         userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Online");
         userRef.child(helper().cleanWord(email.toString())).child("latestEvents").removeValue();
-        finish();
     }
 
     override fun onCallCut(message: callModel) {

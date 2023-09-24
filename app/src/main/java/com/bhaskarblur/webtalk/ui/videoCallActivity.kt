@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.Toast
@@ -42,6 +43,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     private var videoHide = false;
     private var micMute = false;
     private var speaker = false;
+    private var callType = "";
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityVideoCallBinding.inflate(layoutInflater);
@@ -72,17 +74,39 @@ class videoCallActivity : AppCompatActivity(), callHandler {
         var intent = intent;
         receiverEmail = intent.getStringExtra("userEmail").toString();
         receiverName = intent.getStringExtra("userName").toString();
+        callType = intent.getStringExtra("callType").toString();
+
+        if(callType.toString().lowercase().contains("video")) {
+            binding.callType.setText("Video call");
+        }
+        else if(callType.toString().lowercase().contains("audio")) {
+            binding.callType.setText("Audio call");
+        }
+
+        binding.userNameText.setText("On call with "+receiverName);
         firebaseHandler = firebaseHandler(this, userRef, email, userName);
         firebaseWebRTCHandler = firebaseWebRTCHandler(this,userRef, email, userName
             , firebaseHandler);
 
         firebaseWebRTCHandler.setTarget(receiverEmail);
+
         firebaseWebRTCHandler.initWebRTCClient(email);
-        firebaseWebRTCHandler.initLocalSurfaceView(binding.userCamera, true);
-        firebaseWebRTCHandler.initRemoteSurfaceView(binding.otherUserCamera);
+        if(callType.lowercase().contains("video")) {
+            firebaseWebRTCHandler.initLocalSurfaceView(binding.userCamera, true);
+            firebaseWebRTCHandler.initRemoteSurfaceView(binding.otherUserCamera);
+        }
+        else {
+            binding.userCamera.visibility = View.GONE
+            binding.otherUserCamera.visibility = View.GONE
+            binding.swapbtn.visibility = View.GONE
+            binding.videobtn.visibility = View.GONE
+            binding.broadcastbtn.visibility = View.GONE
+            firebaseWebRTCHandler.initLocalSurfaceView(binding.userCamera, false);
+            firebaseWebRTCHandler.initRemoteSurfaceView(binding.otherUserCamera);
+        }
         service = mainService(this, firebaseWebRTCHandler).getInstance()
         service.setCallHandler(this, firebaseHandler);
-        ;
+        service.startService(email, this);
             service.localSurfaceView = binding.userCamera;
         service.remoteSurfaceView = binding.otherUserCamera;
 
@@ -119,10 +143,13 @@ class videoCallActivity : AppCompatActivity(), callHandler {
         binding.speakericon.setOnClickListener {
             if(!speaker) {
                 binding.speakericon.setImageResource(R.drawable.speakericon);
+                service.toggleAudioSpeakerMode(false);
                 speaker = true;
+
             }
             else {
                 speaker = false;
+                service.toggleAudioSpeakerMode(true);
                 binding.speakericon.setImageResource(R.drawable.mobileicon);
             }
         }
@@ -197,5 +224,10 @@ class videoCallActivity : AppCompatActivity(), callHandler {
 
 //            Toast.makeText(this, "Starting Call", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        firebaseWebRTCHandler.endCall();
     }
 }

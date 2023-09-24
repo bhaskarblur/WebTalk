@@ -5,11 +5,14 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager;
 import android.os.Build
 import android.os.IBinder
+import android.provider.MediaStore.Audio
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.bhaskarblur.webtalk.R
+import com.bhaskarblur.webtalk.utils.RTCAudioManager
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
@@ -28,6 +31,8 @@ private var isRunning = false;
     var remoteSurfaceView : SurfaceViewRenderer? = null;
     lateinit var webRTCHandler : webRTCHandler;
     lateinit var firebaseWebRTCHandler: firebaseWebRTCHandler;
+    private lateinit var rtcAudioManager: RTCAudioManager
+    private lateinit var audioManager : AudioManager
     fun getInstance(): mainService {
         if(instance == null) {
             instance = mainService();
@@ -50,9 +55,6 @@ private var isRunning = false;
 
     }
 
-    private fun isValid() {
-
-    }
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(NotificationManager::class.java);
@@ -115,6 +117,10 @@ private var isRunning = false;
     }
 
     fun startService(email: String, context: Context) {
+        audioManager =  context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+//        rtcAudioManager = RTCAudioManager.create(context);
+//        rtcAudioManager.setDefaultAudioDevice(RTCAudioManager.AudioDevice.SPEAKER_PHONE);
+//        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         Log.d("service",email);
         Thread {
             var intent = Intent(context, mainService::class.java);
@@ -124,6 +130,21 @@ private var isRunning = false;
 
         }.start()
 
+    }
+
+    fun toggleAudioSpeakerMode(isSpeaker : Boolean) {
+        if(!isSpeaker) {
+            audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+            audioManager.isSpeakerphoneOn = true
+//            rtcAudioManager.setDefaultAudioDevice(RTCAudioManager.AudioDevice.SPEAKER_PHONE)
+//            rtcAudioManager.selectAudioDevice(RTCAudioManager.AudioDevice.SPEAKER_PHONE)
+        }
+        else {
+            audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+            audioManager.isSpeakerphoneOn = false
+//            rtcAudioManager.setDefaultAudioDevice(RTCAudioManager.AudioDevice.EARPIECE)
+//            rtcAudioManager.selectAudioDevice(RTCAudioManager.AudioDevice.EARPIECE)
+        }
     }
 
 

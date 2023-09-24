@@ -50,9 +50,12 @@ class callScreen : AppCompatActivity(), callHandler {
     private fun manageLogic() {
 
         binding.rejectCall.setOnClickListener{
+            firebaseHandler.answerUser(
             callModel(
                 email, userName, receiverEmail, null, callTypes.Reject.name
             )
+            )
+            userRef.child(helper().cleanWord(email.toString())).child("latestEvents").setValue(null);
             userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Online");
             finish()
             overridePendingTransition(R.anim.fade_2, R.anim.fade);
@@ -67,6 +70,7 @@ class callScreen : AppCompatActivity(), callHandler {
             var intent = Intent(this@callScreen, videoCallActivity::class.java)
             intent.putExtra("userName", receiverName);
             intent.putExtra("userEmail",  receiverEmail);
+            intent.putExtra("callType",  callType);
             startActivity(intent);
             finish()
 

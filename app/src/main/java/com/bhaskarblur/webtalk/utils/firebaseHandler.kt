@@ -335,6 +335,8 @@ class firebaseWebRTCHandler {
     fun toggleVideo(shouldHide : Boolean) {
         webRTCHandler.toggleVideo(shouldHide);
     }
+
+
     fun toggleAudio(shouldBeMuted : Boolean) {
         webRTCHandler.toggleAudio(shouldBeMuted);
     }

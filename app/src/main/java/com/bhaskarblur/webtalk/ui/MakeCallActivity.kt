@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityMakeCallBinding
 import com.bhaskarblur.webtalk.model.callModel
@@ -107,13 +108,14 @@ class makeCall : AppCompatActivity(), callHandler {
         var intent = Intent(this@makeCall, videoCallActivity::class.java)
         intent.putExtra("userName", message.senderName);
         intent.putExtra("userEmail",message.senderEmail);
+        intent.putExtra("callType",  callType);
         startActivity(intent);
         overridePendingTransition(R.anim.fade_2, R.anim.fade);
         finish()
     }
 
     override fun onCallRejected(message: callModel) {
-
+        Toast.makeText(this, "Call Rejected", Toast.LENGTH_SHORT).show()
         firebaseHandler.changeMyStatus("Online");
         finish();
     }
