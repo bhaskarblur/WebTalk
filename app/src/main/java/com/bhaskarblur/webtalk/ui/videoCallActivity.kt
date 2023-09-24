@@ -1,11 +1,15 @@
 package com.bhaskarblur.webtalk.ui
 
+import android.R.attr.width
 import android.content.SharedPreferences
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
+import android.view.ViewGroup
+import android.view.ViewGroup.MarginLayoutParams
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityVideoCallBinding
 import com.bhaskarblur.webtalk.model.callModel
@@ -19,6 +23,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.gson.Gson
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
+
 
 class videoCallActivity : AppCompatActivity(), callHandler {
     private lateinit var binding: ActivityVideoCallBinding;
@@ -36,6 +41,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     private var accepted = false;
     private var videoHide = false;
     private var micMute = false;
+    private var speaker = false;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityVideoCallBinding.inflate(layoutInflater);
@@ -80,7 +86,6 @@ class videoCallActivity : AppCompatActivity(), callHandler {
             service.localSurfaceView = binding.userCamera;
         service.remoteSurfaceView = binding.otherUserCamera;
 
-
         binding.swapbtn.setOnClickListener{
             firebaseWebRTCHandler.switchCamera();
         }
@@ -110,6 +115,17 @@ class videoCallActivity : AppCompatActivity(), callHandler {
                 micMute=false;
             }
         }
+
+        binding.speakericon.setOnClickListener {
+            if(!speaker) {
+                binding.speakericon.setImageResource(R.drawable.speakericon);
+                speaker = true;
+            }
+            else {
+                speaker = false;
+                binding.speakericon.setImageResource(R.drawable.mobileicon);
+            }
+        }
     }
 
     override fun onBackPressed() {
@@ -122,13 +138,14 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     override fun onInitOffer(message: callModel) {
         if(message.isValid() && !offerMade) {
             offerMade = true
-            Toast.makeText(this, "Offered " + message.senderEmail, Toast.LENGTH_SHORT).show()
-            Log.d("offered", message.senderEmail.toString());
+//            Toast.makeText(this, "Offered " + message.senderEmail, Toast.LENGTH_SHORT).show()
+//            Log.d("offered", message.senderEmail.toString());
             firebaseWebRTCHandler.webRTCHandler.onRemoteSessionReceived(
                 SessionDescription(
                     SessionDescription.Type.OFFER,
                     message.callData.toString()
-                )
+                ),
+                message.senderEmail!!
             )
 
             firebaseWebRTCHandler.acceptCall(message.senderEmail!!);
@@ -144,6 +161,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     }
 
     override fun onCallCut(message: callModel) {
+        Toast.makeText(this, "Call Ended", Toast.LENGTH_SHORT).show()
         firebaseWebRTCHandler.webRTCHandler.closeConnection();
         firebaseHandler.changeMyStatus("Online");
         finish();
@@ -173,10 +191,11 @@ class videoCallActivity : AppCompatActivity(), callHandler {
                 SessionDescription(
                     SessionDescription.Type.ANSWER,
                     message.callData.toString()
-                )
+                ),
+                message.senderEmail!!
             )
 
-            Toast.makeText(this, "Call Accepted", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this, "Starting Call", Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -12,6 +12,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.gson.Gson
 import org.webrtc.DataChannel
+import org.webrtc.EglRenderer
 import org.webrtc.IceCandidate
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
@@ -118,13 +119,13 @@ class firebaseHandler {
         var success = false;
         val serMessage = gsonObject.toJson(message);
         Log.d("fbCall", serMessage.toString());
+//        var newSerMessage =
         dbRef.child(helper().cleanWord(message.targetEmail!!))
             .child("latestEvents").setValue(serMessage)
             .addOnSuccessListener({
                 success = true;
-                target = message.targetEmail!!;
-                // adding user to call so that no one else can call!
-//                changeMyStatus("OnCall")
+             //   target = message.targetEmail!!;
+
             })
             .addOnFailureListener({
                 success = false;
@@ -158,6 +159,24 @@ class firebaseHandler {
 
     }
 
+    public fun rejectUser(message : callModel): Boolean {
+        var success = false;
+        val serMessage = gsonObject.toJson(message);
+        dbRef.child(helper().cleanWord(message.targetEmail!!))
+            .child("latestEvents").setValue(serMessage)
+            .addOnSuccessListener({
+                success = true;
+
+//                changeMyStatus("OnCall")
+
+            })
+            .addOnFailureListener({
+                success = false;
+            })
+
+        return success;
+
+    }
 
 }
 class firebaseWebRTCHandler {
@@ -196,8 +215,8 @@ class firebaseWebRTCHandler {
                 super.onAddTrack(p0, p1)
 
                 try {
-                    Log.e("addTrack", "onAddTrack: $p0")
-                    Log.e("addTrack2", "onAddTrack2: $p1")
+                    Log.e("addTrack", "onAddTrack: ${p0!!.parameters.rtcp.toString()}")
+                    Log.e("addTrack2", "onAddTrack2: ${p1!!.size}")
 //
 
 //                    p1?.get(0)?.videoTracks?.get(0)?.addSink(remoteView)
@@ -238,7 +257,7 @@ class firebaseWebRTCHandler {
                 super.onAddStream(p0)
 //                Log.d("addstream",p0!!.videoTracks.size.toString());
                 try {
-                    Log.e("addstream", "onAddStream: $p0")
+                    Log.e("addstream", "onAddStream: ${p0}")
                     p0?.videoTracks?.get(0)?.addSink(remoteView)
 
                 }
@@ -251,7 +270,7 @@ class firebaseWebRTCHandler {
                 super.onIceCandidate(p0)
                 p0.let {
                    Log.d("ice__", it!!.sdp.toString());
-                    webRTCHandler.sendIceCandidate(currentUser, it);
+                    webRTCHandler.sendIceCandidate(target, it);
                 }
 
             }
@@ -259,7 +278,6 @@ class firebaseWebRTCHandler {
             override fun onConnectionChange(newState: PeerConnection.PeerConnectionState?) {
                 super.onConnectionChange(newState)
                Log.d("newState", newState.toString());
-
                 if (newState!!.equals(PeerConnection.PeerConnectionState.CONNECTED)) {
                     dbRef.child(helper().cleanWord(target)).child("status").setValue("OnCall");
                     dbRef.child(helper().cleanWord(currentUser)).child("latestEvents").setValue(null)

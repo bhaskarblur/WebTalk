@@ -7,6 +7,24 @@
     android:background="@color/greenPrimary"
     tools:context=".ui.makeCall">
 
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/userCamera"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/userCameraOverlay"
+        android:layout_width="0dp"
+        android:src="@color/blackLight"
+        android:alpha="0.55"
+        android:layout_height="match_parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <ImageView
         android:id="@+id/rejectCall2"
         android:layout_width="82dp"

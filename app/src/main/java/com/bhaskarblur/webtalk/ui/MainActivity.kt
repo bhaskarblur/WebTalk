@@ -148,9 +148,10 @@ class mainActivity : AppCompatActivity(), callHandler {
 
               firebaseHandler.callUser(user)
 
-                var intent = Intent(this@mainActivity, videoCallActivity::class.java)
+                var intent = Intent(this@mainActivity, makeCall::class.java)
                 intent.putExtra("userName", userList.get(position).username);
                 intent.putExtra("userEmail", userList.get(position).email);
+                intent.putExtra("callType", "video");
                 startActivity(intent);
                 overridePendingTransition(R.anim.fade_2, R.anim.fade);
 
@@ -166,9 +167,8 @@ class mainActivity : AppCompatActivity(), callHandler {
                 var intent = Intent(this@mainActivity, makeCall::class.java);
                 intent.putExtra("userName", userList.get(position).username);
                 intent.putExtra("userEmail",  userList.get(position).email);
-                intent.putExtra("callType", callTypes.StartedAudioCall.name);
+                intent.putExtra("callType", "audio");
                 startActivity(intent);
-                firebaseHandler.setAcceptCall(false);
                 overridePendingTransition(R.anim.fade_2, R.anim.fade);
             }
 
@@ -252,17 +252,22 @@ class mainActivity : AppCompatActivity(), callHandler {
 
         if(message.isValid()) {
 
-            binding.callLayout.visibility = View.VISIBLE;
-            binding.calltext.setText("You've an incoming call from "
-            +message.senderName.toString());
-
-            target = message.senderEmail!!;
-            targetName = message.senderName!!;
+            var intent = Intent(this@mainActivity, callScreen::class.java)
+            intent.putExtra("userName", message.senderName);
+            intent.putExtra("userEmail",message.senderEmail);
+            if(message.callType.toString().lowercase().contains("video")) {
+                intent.putExtra("callType", "video");
+            }
+            else {
+                intent.putExtra("callType", "audio");
+            }
+            startActivity(intent);
+            overridePendingTransition(R.anim.fade_2, R.anim.fade);
         }
 
-        else {
-            binding.callLayout.visibility = View.GONE;
-        }
+//        else {
+//            binding.callLayout.visibility = View.GONE;
+//        }
     }
 
     override fun onInitOffer(message: callModel) {
@@ -276,6 +281,7 @@ class mainActivity : AppCompatActivity(), callHandler {
     override fun onCallRejected(message: callModel) {
         userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Online");
         userRef.child(helper().cleanWord(email.toString())).child("latestEvents").removeValue();
+        finish();
     }
 
     override fun onCallCut(message: callModel) {

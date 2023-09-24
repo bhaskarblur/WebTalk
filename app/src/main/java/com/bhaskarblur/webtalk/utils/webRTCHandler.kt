@@ -40,14 +40,13 @@ class webRTCHandler  {
 
     val rtcConfig = PeerConnection.RTCConfiguration(
         arrayListOf(
-            PeerConnection.IceServer.builder("stun:relay.backups.cz").createIceServer(),
-            PeerConnection.IceServer.builder("turn:relay.backups.cz?transport=tcp")
-
-                .setUsername("webrtc")
-                .setPassword("webrtc").createIceServer(),
+            PeerConnection.IceServer.builder("turn:a.relay.metered.ca:443?transport=tcp")
+            .setUsername("83eebabf8b4cce9d5dbcb649")
+            .setPassword("2D7JvfkOQtBdYW3R").createIceServer(),
+//                    PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
         )
     ).apply {
-        // it's very important to use new unified sdp semantics PLAN_B is deprecated
+        enableRtpDataChannel = true
     }
     private lateinit var userEmail : String;
     private lateinit var userName : String;
@@ -137,7 +136,7 @@ class webRTCHandler  {
         localAudioTrack = peerConnectionFactory.createAudioTrack(localTrackId+"_audio", localAudioSource)
         localStream?.addTrack(localAudioTrack);
         localStream?.videoTracks?.forEach({
-            peerConnectionInstance?.addTrack(it);
+//            peerConnectionInstance?.addTrack(it);
         })
         peerConnectionInstance?.addStream(localStream);
     }
@@ -151,7 +150,7 @@ class webRTCHandler  {
             surfaceTextureHelper, context, localVideoSource.capturerObserver
 
         )
-        videoCapturer.startCapture(1080, 720, 50);
+        videoCapturer.startCapture(1080, 720, 60);
 
         localVideoTrack = peerConnectionFactory.createVideoTrack(localTrackId+"_video"
         , localVideoSource);
@@ -206,7 +205,7 @@ class webRTCHandler  {
                             Log.d("statusCall", "setCallSuccessthis")
                             success =
                                 true;
-                            Log.d("sdpnew", desc?.description.toString())
+//                            Log.d("sdpnew", desc?.description.toString())
 
                             firebaseHandler.callUser(
                                 callModel(userEmail, userName, target, desc?.description
@@ -285,15 +284,17 @@ class webRTCHandler  {
         return success;
     }
 
-    fun onRemoteSessionReceived(sdp : SessionDescription)
+    fun onRemoteSessionReceived(sdp : SessionDescription, target: String)
     {
         Log.d("remote received", sdp.type.toString());
         peerConnectionInstance?.setRemoteDescription(object : SdpObserver {
             override fun onCreateSuccess(p0: SessionDescription?) {
                 Log.d("remotedesc1", p0?.type.toString());
+
             }
 
             override fun onSetSuccess() {
+                Log.d("remotedesc0","");
             }
 
             override fun onCreateFailure(p0: String?) {
@@ -312,6 +313,7 @@ class webRTCHandler  {
 
     fun addIceCandidateToPeer(iceCandidate: IceCandidate) {
         peerConnectionInstance?.addIceCandidate(iceCandidate);
+        Log.d("icePeerServer",iceCandidate.serverUrl)
     }
 
     fun sendIceCandidate(target: String, iceCandidate: IceCandidate) {
@@ -320,6 +322,8 @@ class webRTCHandler  {
         firebaseHandler.answerUser(  callModel(
             userEmail, userName, target, gsonObject.toJson(iceCandidate)
             , callTypes.ICECandidate.name));
+        Log.d("iceCallData", gsonObject.toJson(iceCandidate).toString())
+        Log.d("iceCallDataTarget", target)
     }
 
     fun closeConnection() {

@@ -33,20 +33,20 @@
 
     <ImageView
         android:id="@+id/voiceIcon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:tint="@color/greenPrimary"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@drawable/voice_icon"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:src="@drawable/voice_icon" />
+        app:tint="@color/greenPrimary" />
 
     <ImageView
         android:id="@+id/videoIcon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
         android:layout_marginEnd="16dp"
-        app:tint="@color/greenPrimary"
+        android:src="@drawable/video_icon"
         app:layout_constraintEnd_toStartOf="@+id/voiceIcon"
         app:layout_constraintTop_toTopOf="parent"
-        android:src="@drawable/video_icon" />
+        app:tint="@color/greenPrimary" />
 </androidx.constraintlayout.widget.ConstraintLayout>

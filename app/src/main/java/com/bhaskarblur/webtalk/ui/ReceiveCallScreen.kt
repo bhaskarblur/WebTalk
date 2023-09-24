@@ -5,12 +5,14 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.view.View
 import android.widget.Toast
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityReceiveCallScreenBinding
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.services.mainService
 import com.bhaskarblur.webtalk.utils.callHandler
+import com.bhaskarblur.webtalk.utils.callTypes
 import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
 import com.bhaskarblur.webtalk.utils.helper
@@ -48,17 +50,20 @@ class callScreen : AppCompatActivity(), callHandler {
     private fun manageLogic() {
 
         binding.rejectCall.setOnClickListener{
+            callModel(
+                email, userName, receiverEmail, null, callTypes.Reject.name
+            )
             userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Online");
-            userRef.child(helper().cleanWord(receiverEmail)).child("status").setValue("Online");
-            userRef.child(helper().cleanWord(email.toString())).child("latestEvents").removeValue()
             finish()
             overridePendingTransition(R.anim.fade_2, R.anim.fade);
         }
 
         binding.acceptCall.setOnClickListener {
-            firebaseWebRTCHandler.setTarget(receiverEmail);
-            firebaseWebRTCHandler.initWebRTCClient(email);
-//            firebaseWebRTCHandler.startCall(receiverEmail, "Offer")
+            firebaseHandler.answerUser(
+                callModel(
+                    email, userName, receiverEmail, null, callTypes.Answer.name
+                )
+            )
             var intent = Intent(this@callScreen, videoCallActivity::class.java)
             intent.putExtra("userName", receiverName);
             intent.putExtra("userEmail",  receiverEmail);
@@ -96,7 +101,18 @@ class callScreen : AppCompatActivity(), callHandler {
 
         service = mainService(this, firebaseWebRTCHandler).getInstance()
         service.setCallHandler(this, firebaseHandler);
-        rtcHandler = webRTCHandler(this, Gson(), firebaseHandler);
+        firebaseWebRTCHandler.initWebRTCClient(email);
+        if(callType.toString().lowercase().contains("video")) {
+            binding.callType.setText("Video");
+            binding.userCamera.visibility = View.VISIBLE
+            binding.userCameraOverlay.visibility = View.VISIBLE
+            firebaseWebRTCHandler.initLocalSurfaceView(binding.userCamera, true);
+        }
+        else if(callType.toString().lowercase().contains("audio")) {
+            binding.callType.setText("Audio");
+            binding.userCamera.visibility = View.GONE
+            binding.userCameraOverlay.visibility = View.GONE
+        }
     }
 
     override fun onBackPressed() {
@@ -131,20 +147,8 @@ class callScreen : AppCompatActivity(), callHandler {
 
     override fun onUserAdded(message: callModel) {
 
-        val candidate : IceCandidate? = try {
-            Gson().fromJson(message.callData.toString(), IceCandidate::class.java);
-
-        } catch (e:Exception) {
-            null;
-        }
-        Toast.makeText(this, "user added "+candidate!!.sdp.toString() , Toast.LENGTH_SHORT).show()
-
-        candidate?.let {
-//            rtcHandler.sendIceCandidate(receiverEmail, it);
-        }
     }
 
     override fun finalCallAccepted(message: callModel) {
-        TODO("Not yet implemented")
     }
 }

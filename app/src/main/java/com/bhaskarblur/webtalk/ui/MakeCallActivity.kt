@@ -6,12 +6,15 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
+import android.view.View
+import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivityMakeCallBinding
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.services.mainService
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
+import com.bhaskarblur.webtalk.utils.helper
 import com.bhaskarblur.webtalk.utils.webRTCHandler
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -41,6 +44,15 @@ class makeCall : AppCompatActivity(), callHandler {
         userRef = database.getReference("Users");
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         loadData();
+        manageLogic();
+    }
+
+    private fun manageLogic() {
+
+        binding.rejectCall2.setOnClickListener {
+            userRef.child(helper().cleanWord(receiverEmail)).child("latestEvents").setValue(null)
+            finish()
+        }
     }
 
     private fun loadData() {
@@ -51,12 +63,7 @@ class makeCall : AppCompatActivity(), callHandler {
         receiverName = intent.getStringExtra("userName").toString();
         callType = intent.getStringExtra("callType").toString();
 
-        if(callType.toString().lowercase().contains("video")) {
-            binding.callType.setText("Video");
-        }
-        else if(callType.toString().lowercase().contains("audio")) {
-            binding.callType.setText("Audiol");
-        }
+
 
         binding.userNameText.setText("Calling "+receiverName);
 
@@ -70,6 +77,21 @@ class makeCall : AppCompatActivity(), callHandler {
         rtcHandler = webRTCHandler(this, Gson(), firebaseHandler);
         firebaseWebRTCHandler.setTarget(receiverEmail);
         firebaseWebRTCHandler.initWebRTCClient(email);
+        firebaseWebRTCHandler.setTarget(receiverEmail);
+
+        ;
+
+        if(callType.toString().lowercase().contains("video")) {
+            binding.callType.setText("Video");
+            binding.userCamera.visibility = View.VISIBLE
+            binding.userCameraOverlay.visibility = View.VISIBLE
+            firebaseWebRTCHandler.initLocalSurfaceView(binding.userCamera, true);
+        }
+        else if(callType.toString().lowercase().contains("audio")) {
+            binding.callType.setText("Audio");
+            binding.userCameraOverlay.visibility = View.GONE
+            binding.userCamera.visibility = View.GONE
+        }
 
     }
 
@@ -78,25 +100,15 @@ class makeCall : AppCompatActivity(), callHandler {
 
     override fun onInitOffer(message: callModel) {
         firebaseWebRTCHandler.acceptCall(receiverEmail)
-//        firebaseWebRTCHandler.pickCall(receiverEmail);
 
-        Log.d("1stmail", email);
-        Log.d("2ndmail", message.targetEmail!!);
-//        if(!message.targetEmail!!.equals(receiverEmail) && !videoOpened) {
-//            videoOpened = true
-            var intent = Intent(this@makeCall, videoCallActivity::class.java)
-            intent.putExtra("userName", receiverName);
-            intent.putExtra("userEmail", receiverEmail);
-            startActivity(intent);
-            finish()
-//        }
     }
 
     override fun onCallAccepted(message: callModel) {
-//        rtcHandler.onRemoteSessionReceived(
-//            SessionDescription(SessionDescription.Type.ANSWER,
-//                message.callData.toString())
-//        )
+        var intent = Intent(this@makeCall, videoCallActivity::class.java)
+        intent.putExtra("userName", message.senderName);
+        intent.putExtra("userEmail",message.senderEmail);
+        startActivity(intent);
+        overridePendingTransition(R.anim.fade_2, R.anim.fade);
         finish()
     }
 
@@ -110,20 +122,10 @@ class makeCall : AppCompatActivity(), callHandler {
     }
 
     override fun onUserAdded(message: callModel) {
-//        Log.d("1stmail", email);
-//        Log.d("2ndmail", message.targetEmail!!);
-//        if(!message.targetEmail!!.equals(receiverEmail) && !videoOpened) {
-//            videoOpened = true
-//            var intent = Intent(this@makeCall, videoCallActivity::class.java)
-//            intent.putExtra("userName", receiverName);
-//            intent.putExtra("userEmail", receiverEmail);
-//            startActivity(intent);
-//            finish()
-//        }
+
 
     }
 
     override fun finalCallAccepted(message: callModel) {
-        TODO("Not yet implemented")
     }
 }
