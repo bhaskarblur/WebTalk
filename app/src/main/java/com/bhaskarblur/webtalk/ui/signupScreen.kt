@@ -1,6 +1,7 @@
 package com.bhaskarblur.webtalk.ui
 
 import android.app.ProgressDialog
+import android.content.ContentValues
 import android.content.Intent
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
@@ -12,12 +13,15 @@ import android.widget.Toast
 import com.bhaskarblur.webtalk.R
 import com.bhaskarblur.webtalk.databinding.ActivitySignupScreenBinding
 import com.bhaskarblur.webtalk.model.userModel
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 
 class signupScreen : AppCompatActivity() {
+    private var pushtToken: String = ""
     private lateinit var binding: ActivitySignupScreenBinding;
     private lateinit var userRef : DatabaseReference;
     private var prefs: SharedPreferences? = null
@@ -29,6 +33,22 @@ class signupScreen : AppCompatActivity() {
         userRef = database.getReference("Users");
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         manageLogic();
+        getPushToken()
+    }
+
+    private fun getPushToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w(ContentValues.TAG, "Fetching FCM registration token failed", task.exception)
+                return@OnCompleteListener
+            }
+
+            // Get new FCM registration token
+            val token = task.result
+
+            pushtToken = token;
+            Log.d("push noti token", pushtToken);
+        })
     }
 
     private fun manageLogic() {

@@ -1,25 +1,29 @@
 package com.bhaskarblur.webtalk.ui
 
 import android.Manifest
+import android.app.Dialog
+import android.content.ContentValues.TAG
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bhaskarblur.webtalk.R
-import com.bhaskarblur.webtalk.databinding.ActivityMainBinding
-import com.bhaskarblur.webtalk.model.userPublicModel
 import com.bhaskarblur.webtalk.adapter.usersAdapter
+import com.bhaskarblur.webtalk.databinding.ActivityMainBinding
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.model.isValid
+import com.bhaskarblur.webtalk.model.userPublicModel
 import com.bhaskarblur.webtalk.services.mainService
 import com.bhaskarblur.webtalk.services.mainServiceActions
 import com.bhaskarblur.webtalk.utils.callHandler
@@ -28,11 +32,13 @@ import com.bhaskarblur.webtalk.utils.firebaseHandler
 import com.bhaskarblur.webtalk.utils.firebaseWebRTCHandler
 import com.bhaskarblur.webtalk.utils.helper
 import com.bhaskarblur.webtalk.utils.webRTCHandler
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.messaging.FirebaseMessaging
 
 
 class mainActivity : AppCompatActivity(), callHandler {
@@ -50,6 +56,8 @@ class mainActivity : AppCompatActivity(), callHandler {
     private var target: String = ""
     private var accepted = false;
     private var targetName: String = ""
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater);
@@ -59,12 +67,17 @@ class mainActivity : AppCompatActivity(), callHandler {
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         checkAndRequestPermissions()
         manageLogic();
-//        loadData();
+        loadData();
     }
 
 
+
     private fun checkAndRequestPermissions(): Boolean {
-        val noti = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+        val noti = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NOTIFICATION_POLICY)
+        }
         val camera =
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
         val audio =
@@ -100,7 +113,7 @@ class mainActivity : AppCompatActivity(), callHandler {
             username!! , firebaseHandler);
 
         firebaseWebRTCHandler.initWebRTCClient(email!!);
-        service = mainService(this, firebaseWebRTCHandler).getInstance();
+        service = mainService(this, firebaseWebRTCHandler)
         service.setCallHandler(this, firebaseHandler)
             service.startService(email!!, this, mainServiceActions.START_SERVICE);
 
@@ -138,17 +151,23 @@ class mainActivity : AppCompatActivity(), callHandler {
 
     private fun manageLogic() {
         userAdapter = usersAdapter(userList, this);
-        var llm : LinearLayoutManager = LinearLayoutManager(this);
+        var llm: LinearLayoutManager = LinearLayoutManager(this);
         llm.orientation = LinearLayoutManager.VERTICAL;
         binding.userRV.layoutManager = llm;
 
-        userAdapter.setCallActionListener(object : usersAdapter.callActionListener{
+        userAdapter.setCallActionListener(object : usersAdapter.callActionListener {
             override fun onVideoCall(position: Int) {
                 checkAndRequestPermissions()
-                var user = callModel(email, username,
-                    userList.get(position).email,null,callTypes.StartedVideoCall.name);
+                var user = callModel(
+                    email, username,
+                    userList.get(position).email, null, callTypes.StartedVideoCall.name
+                );
 
-              firebaseHandler.callUser(user)
+                firebaseHandler.callUser(user)
+
+                firebaseHandler.sendPushNotifications(token = userList.get(position).pushToken,
+                    title = "You've received a Video call from "+username, body =
+                username+" is video calling you. Tap on this to join the call.")
 
                 var intent = Intent(this@mainActivity, makeCall::class.java)
                 intent.putExtra("userName", userList.get(position).username);
@@ -161,14 +180,18 @@ class mainActivity : AppCompatActivity(), callHandler {
 
             override fun onAudioCall(position: Int) {
                 checkAndRequestPermissions()
-                var user = callModel(email, username,
-                    userList.get(position).email,null,callTypes.StartedAudioCall.name);
+                var user = callModel(
+                    email, username,
+                    userList.get(position).email, null, callTypes.StartedAudioCall.name
+                );
 
                 firebaseHandler.callUser(user)
-
+                firebaseHandler.sendPushNotifications(token = userList.get(position).pushToken,
+                    title = "You've received a Audio call from "+username, body =
+                    username+" is audio calling you. Tap on this to join the call.")
                 var intent = Intent(this@mainActivity, makeCall::class.java);
                 intent.putExtra("userName", userList.get(position).username);
-                intent.putExtra("userEmail",  userList.get(position).email);
+                intent.putExtra("userEmail", userList.get(position).email);
                 intent.putExtra("callType", "audio");
                 startActivity(intent);
                 overridePendingTransition(R.anim.fade_2, R.anim.fade);
@@ -182,8 +205,11 @@ class mainActivity : AppCompatActivity(), callHandler {
             userRef.child(helper().cleanWord(email.toString())).child("status").setValue("Online");
             userRef.child(helper().cleanWord(email.toString())).child("latestEvents").removeValue();
             binding.callLayout.visibility = View.GONE;
-            firebaseHandler.answerUser(callModel(email, username, target
-                , null, callTypes.Reject.name));
+            firebaseHandler.answerUser(
+                callModel(
+                    email, username, target, null, callTypes.Reject.name
+                )
+            );
         }
         binding.acceptbtns.setOnClickListener {
             firebaseWebRTCHandler.setTarget(target);
@@ -191,8 +217,8 @@ class mainActivity : AppCompatActivity(), callHandler {
             // This creates an offer!
             firebaseHandler.answerUser(
                 callModel(
-                email, username, target, null, callTypes.Answer.name
-            )
+                    email, username, target, null, callTypes.Answer.name
+                )
             )
 
             var intent = Intent(this@mainActivity, videoCallActivity::class.java)
@@ -201,7 +227,27 @@ class mainActivity : AppCompatActivity(), callHandler {
             startActivity(intent);
         }
 
+        binding.logout.setOnClickListener {
 
+            AlertDialog.Builder(this@mainActivity)
+                .setTitle("Logout ?")
+                .setMessage("Are you sure, you want to log out ?")
+                .setPositiveButton("Yes", object : DialogInterface.OnClickListener {
+                    override fun onClick(p0: DialogInterface?, p1: Int) {
+                        val editor: SharedPreferences.Editor = prefs!!.edit()
+                        editor.clear()
+                        editor.apply()
+                        startActivity(Intent(this@mainActivity, loginScreen::class.java))
+                        finish()
+                    }
+
+                }).setNegativeButton("No", object : DialogInterface.OnClickListener {
+                    override fun onClick(p0: DialogInterface?, p1: Int) {
+                    }
+
+                }).show()
+
+        }
     }
 
     override fun finish() {
@@ -295,4 +341,5 @@ class mainActivity : AppCompatActivity(), callHandler {
 
     override fun finalCallAccepted(message: callModel) {
     }
+
 }

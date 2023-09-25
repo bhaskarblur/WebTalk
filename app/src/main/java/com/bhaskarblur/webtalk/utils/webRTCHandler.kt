@@ -400,7 +400,7 @@ class webRTCHandler  {
         }
     }
 
-    private fun startScreenCapturing() {
+    fun startScreenCapturing() {
         val displayMetrics = DisplayMetrics()
         val windowsManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         windowsManager.defaultDisplay.getMetrics(displayMetrics)
@@ -414,6 +414,7 @@ class webRTCHandler  {
 
         Log.d("Startedscreen", "yes")
         screenCapturer = createScreenCapturer()
+
         screenCapturer.initialize(
             surfaceTextureHelper,context,localScreenVideoSource.capturerObserver
         )
@@ -426,7 +427,7 @@ class webRTCHandler  {
         peerConnectionInstance?.addStream(localStream)
     }
 
-    private fun stopScreenCapturing() {
+     fun stopScreenCapturing() {
 
         screenCapturer?.stopCapture()
         screenCapturer?.dispose()

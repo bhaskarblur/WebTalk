@@ -66,11 +66,12 @@ class videoCallActivity : AppCompatActivity(), callHandler {
         super.onStart()
         requestScreenCapture = registerForActivityResult(ActivityResultContracts
             .StartActivityForResult()) {
+            Log.d("Screen started","1");
                 if(it.resultCode == Activity.RESULT_OK) {
-                    service.startService(email, this, mainServiceActions.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
                     val intent = it.data;
-                    service.setscreenPermissionIntent(intent!!)
-//                    service.toggleScreenShare(true, this@videoCallActivity);
+                    mainService.screenPermissionIntent = intent
+                    service.startService(email, this, mainServiceActions.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION  )
+                    service.setfirebaseWebRTCHandler(firebaseWebRTCHandler)
                     isSharing = true
 
                 }
@@ -87,7 +88,9 @@ class videoCallActivity : AppCompatActivity(), callHandler {
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         loadData();
-        manageLogic();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            manageLogic()
+        };
     }
 
     private fun manageLogic() {
@@ -95,7 +98,9 @@ class videoCallActivity : AppCompatActivity(), callHandler {
 
         binding.cutCall.setOnClickListener {
             firebaseWebRTCHandler.endCall();
-            service.stopForeground(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                service.stopAudio()
+            };
             service.stopSelf();
             finish();
         }
@@ -140,7 +145,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
             firebaseWebRTCHandler.initLocalSurfaceView(binding.userCamera, false);
             firebaseWebRTCHandler.initRemoteSurfaceView(binding.otherUserCamera);
         }
-        service = mainService(this, firebaseWebRTCHandler).getInstance()
+        service = mainService(this, firebaseWebRTCHandler)
         service.setCallHandler(this, firebaseHandler);
         service.setWebRtchandler(firebaseWebRTCHandler.webRTCHandler)
         service.startService(email, this, mainServiceActions.START_SERVICE);
@@ -235,7 +240,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
                 isSharing = false
                 binding.videobtn.visibility = View.VISIBLE
                 binding.swapbtn.visibility = View.VISIBLE
-//                service.toggleScreenShare(false, this);
+                service.startService(email, this, mainServiceActions.STOP_PROJECTION  )
                 binding.broadcastbtn.setImageResource(R.drawable.screenon)
                 binding.broadcastbtn.setBackgroundTintList(getResources().getColorStateList(R.color.blackLight));
                 binding.broadcastbtn.setColorFilter(ContextCompat.getColor(this, R.color.white), android.graphics.PorterDuff.Mode.SRC_IN);
@@ -286,6 +291,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     override fun onCallRejected(message: callModel) {
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCallCut(message: callModel) {
 //        Toast.makeText(this, "Call Ended", Toast.LENGTH_SHORT).show()
         firebaseWebRTCHandler.webRTCHandler.closeConnection();
@@ -328,14 +334,18 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     override fun finish() {
         super.finish()
         firebaseWebRTCHandler.endCall();
-        service.stopForeground(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            service.stopAudio()
+        };
         service.stopSelf();
 
     }
     override fun onDestroy() {
         super.onDestroy()
         firebaseWebRTCHandler.endCall();
-        service.stopForeground(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            service.stopAudio()
+        };
         service.stopSelf();
 
     }

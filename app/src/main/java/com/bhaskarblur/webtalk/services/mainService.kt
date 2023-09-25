@@ -6,14 +6,17 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.bhaskarblur.webtalk.R
+import com.bhaskarblur.webtalk.ui.videoCallActivity
 import com.bhaskarblur.webtalk.utils.RTCAudioManager
 import com.bhaskarblur.webtalk.utils.callHandler
 import com.bhaskarblur.webtalk.utils.firebaseHandler
@@ -32,23 +35,19 @@ private var isRunning = false;
     var localSurfaceView : SurfaceViewRenderer? = null;
     var remoteSurfaceView : SurfaceViewRenderer? = null;
     lateinit var webRTCHandler : webRTCHandler;
-    lateinit var firebaseWebRTCHandler: firebaseWebRTCHandler;
+    lateinit var firebaseWebRTCHandler: firebaseWebRTCHandler
     private lateinit var rtcAudioManager: RTCAudioManager
     private lateinit var audioManager : AudioManager
     private var isPreviousStateVideo = true;
+    private lateinit var videoCallActivity : videoCallActivity
 
-
-    var screenPermissionIntent: Intent? = null;
-
-    fun setscreenPermissionIntent(screenPermissionIntent : Intent) {
-        this.screenPermissionIntent = screenPermissionIntent
+//    var screenPermissionIntent: Intent? = null;
+//
+    companion object {
+        var screenPermissionIntent: Intent? = null;
     }
-    fun getInstance(): mainService {
-        if(instance == null) {
-            instance = mainService();
-        }
-        return instance!!;
-    }
+
+
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
@@ -59,17 +58,23 @@ private var isRunning = false;
                     Log.d("Service has been started", "true");
                 }
                 mainServiceActions.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION.name -> {
-                    Log.d("Service has been started2", "true")
-                    val notificationChannel = NotificationChannel(
-                        "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
-                    )
-                    notificationManager = this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.createNotificationChannel(notificationChannel);
-                    val notification = NotificationCompat.Builder(this, "channel1")
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                    startForeground(1, notification.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
-                    Log.d("Startedscreen_3", "yes")
+//                    Log.d("Service has been started2", "true")
+//                    val notificationChannel = NotificationChannel(
+//                        "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
+//                    )
+//                    notificationManager = this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+//                    notificationManager.createNotificationChannel(notificationChannel);
+//                    val notification = NotificationCompat.Builder(this, "channel1")
+//                        .setSmallIcon(R.mipmap.ic_launcher)
+//                    startForeground(1, notification.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+                    Log.d("Startedscreen_3", "yes");
 
+//                    toggleScreenShare()
+                }
+
+                mainServiceActions.STOP_PROJECTION.name -> {
+                    webRTCHandler.toggleVideo(false);
+                    webRTCHandler.toggleScreenShare(false);
                 }
                 else -> Unit
             }
@@ -80,10 +85,15 @@ private var isRunning = false;
 
     override fun onCreate() {
         super.onCreate()
+        Log.d("servicecreated", "yes");
         notificationManager = getSystemService(NotificationManager::class.java);
-        firebaseWebRTCHandler.initWebRTCClient(userEmail!!);
+
+//      firebaseWebRTCHandler.initWebRTCClient(userEmail!!);
+
+
 
     }
+
     private fun handleStartService(intent: Intent?) {
 
         if(!isRunning) {
@@ -124,6 +134,10 @@ private var isRunning = false;
         this.webRTCHandler = webRTCHandler;
     }
 
+   fun setfirebaseWebRTCHandler(webRTCHandler: firebaseWebRTCHandler) {
+       this.firebaseWebRTCHandler = webRTCHandler;
+   }
+
     constructor()
     override fun onBind(p0: Intent?): IBinder? {
         return null
@@ -139,7 +153,7 @@ private var isRunning = false;
             }
         }
         catch (e:Exception) {
-            Log.d("err_", e.message.toString());
+            Log.d("err_here", e.message.toString());
         }
     }
 
@@ -147,7 +161,7 @@ private var isRunning = false;
         audioManager =  context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         Log.d("service",email);
         Thread {
-            var intent = Intent(context, mainService::class.java);
+            var intent = Intent(requireNotNull(context).applicationContext, mainService::class.java);
             intent.putExtra("userEmail", email);
             intent.action = action.name
             Log.d("startedservice_4","yes")
@@ -167,25 +181,46 @@ private var isRunning = false;
         else {
             audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
             audioManager.isSpeakerphoneOn = false
+
 //            rtcAudioManager.setDefaultAudioDevice(RTCAudioManager.AudioDevice.EARPIECE)
 //            rtcAudioManager.selectAudioDevice(RTCAudioManager.AudioDevice.EARPIECE)
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
-    fun toggleScreenShare(shouldShow : Boolean, context_: Context) {
+    @RequiresApi(Build.VERSION_CODES.S)
+    fun stopAudio() {
+        audioManager.clearCommunicationDevice()
+    }
+//    @RequiresApi(Build.VERSION_CODES.Q)
+//    fun toggleScreenShare(shouldShow : Boolean, context_: Context, email: String, videoCallActivity: videoCallActivity) {
+//        this.context = context_;
+//        this.videoCallActivity = videoCallActivity
+//        if(shouldShow) {
+//            startService(
+//                email,
+//                context_,
+//                mainServiceActions.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+//            )
+//        }
+//        else {
+//
+//            startService(
+//                email,
+//                context_,
+//                mainServiceActions.STOP_PROJECTION
+//            )
+//        }
+//
+//    }
 
-        webRTCHandler.setScreenCapturer(screenPermissionIntent!!)
+    fun toggleScreenShare() {
+        firebaseWebRTCHandler.setScreenCapturer(screenPermissionIntent!!)
         if(isPreviousStateVideo) {
-            webRTCHandler.toggleVideo(true);
-
-            webRTCHandler.setScreenCapturer(screenPermissionIntent!!)
+            firebaseWebRTCHandler.toggleVideo(true);
             Log.d("Startedscreen_2", "yes")
-            webRTCHandler.toggleScreenShare(true);
-        }
-        else {
-            webRTCHandler.toggleVideo(false);
-            webRTCHandler.toggleScreenShare(false);
+            firebaseWebRTCHandler.toggleScreenShare(true);
+        } else {
+
         }
     }
 

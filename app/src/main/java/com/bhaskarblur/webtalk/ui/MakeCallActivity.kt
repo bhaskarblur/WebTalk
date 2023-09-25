@@ -74,7 +74,7 @@ class makeCall : AppCompatActivity(), callHandler {
         firebaseWebRTCHandler = firebaseWebRTCHandler(this,userRef, email, userName
             , firebaseHandler);
 
-        service = mainService(this, firebaseWebRTCHandler).getInstance()
+        service = mainService(this, firebaseWebRTCHandler)
         service.setCallHandler(this, firebaseHandler);
         rtcHandler = webRTCHandler(this, Gson(), firebaseHandler);
         firebaseWebRTCHandler.setTarget(receiverEmail);

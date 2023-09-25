@@ -37,19 +37,19 @@ class usersAdapter : RecyclerView.Adapter<usersAdapter.viewHolder> {
 
         holder.name.setText(list.get(position).username);
         holder.status.setText(list.get(position).status);
-        Log.d("statusUser", list.get(position).status);
-        if(list.get(position).status.equals("Offline") ||
-            list.get(position).status.equals("OnCall")) {
+//        Log.d("statusUser", list.get(position).status);
+//        if(list.get(position).status.equals("Offline") ||
+//            list.get(position).status.equals("OnCall")) {
             holder.video.setVisibility(View.GONE);
             holder.voice.setVisibility(View.GONE);
             holder.status.setTextColor(content.resources.getColor(R.color.red));
 
-        }
-        else {
+//        }
+//        else {
             holder.video.setVisibility(View.VISIBLE);
             holder.voice.setVisibility(View.VISIBLE);
             holder.status.setTextColor(content.resources.getColor(R.color.greenPrimary));
-        }
+//        }
     }
 
 

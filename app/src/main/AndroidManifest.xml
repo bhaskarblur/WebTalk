@@ -5,6 +5,9 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="ndroid.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -12,6 +15,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove"/>
 
     <uses-feature
         android:glEsVersion="0x00020000"
@@ -35,6 +39,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.WebTalk"
         tools:targetApi="31">
+
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
         <activity
             android:name=".ui.audioCall"
             android:exported="false" />
@@ -48,7 +59,21 @@
             android:name=".ui.callScreen"
             android:exported="false" />
 
-        <service android:name=".services.mainService" />
+        <service
+            android:name=".services.firebasePushNotifications"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".services.mainService"
+            android:foregroundServiceType="mediaProjection"
+            android:enabled="true"
+            android:process="."
+            tools:targetApi="q"
+            android:stopWithTask="true" />
 
         <activity
             android:name=".ui.mainActivity"
@@ -61,10 +86,6 @@
             android:exported="false" />
         <activity
             android:name=".ui.splashScreen"
-            android:enabled="true"
-            tools:targetApi="q"
-            android:stopWithTask="true"
-            android:foregroundServiceType="mediaProjection"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
