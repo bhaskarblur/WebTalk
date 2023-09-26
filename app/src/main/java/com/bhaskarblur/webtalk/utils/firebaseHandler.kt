@@ -9,6 +9,7 @@ import android.util.Log
 import android.widget.Toast
 import com.bhaskarblur.webtalk.model.callModel
 import com.bhaskarblur.webtalk.services.mainService
+import com.google.android.gms.tasks.Task
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -43,6 +44,7 @@ class firebaseHandler {
     private lateinit var gsonObject : Gson;
     private var acceptCall = true;
      var target ="";
+    private lateinit var valueEventListenr : Any;
     private var fcmApiBaseUrl = "https://fcm.googleapis.com/fcm/send";
 
 
@@ -129,12 +131,13 @@ class firebaseHandler {
 
     }
 
+
     public fun callUser(message : callModel): Boolean {
         var success = false;
         val serMessage = gsonObject.toJson(message);
         Log.d("fbCall", serMessage.toString());
 //        var newSerMessage =
-        dbRef.child(helper().cleanWord(message.targetEmail!!))
+        valueEventListenr = dbRef.child(helper().cleanWord(message.targetEmail!!))
             .child("latestEvents").setValue(serMessage)
             .addOnSuccessListener({
                 success = true;

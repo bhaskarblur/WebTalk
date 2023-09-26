@@ -294,7 +294,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onCallCut(message: callModel) {
 //        Toast.makeText(this, "Call Ended", Toast.LENGTH_SHORT).show()
-        firebaseWebRTCHandler.webRTCHandler.closeConnection();
+        firebaseWebRTCHandler.endCall();
         firebaseHandler.changeMyStatus("Online");
         finish();
 
@@ -347,6 +347,7 @@ class videoCallActivity : AppCompatActivity(), callHandler {
             service.stopAudio()
         };
         service.stopSelf();
+
 
     }
 }

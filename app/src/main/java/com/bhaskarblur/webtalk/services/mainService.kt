@@ -40,6 +40,7 @@ private var isRunning = false;
     private lateinit var audioManager : AudioManager
     private var isPreviousStateVideo = true;
     private lateinit var videoCallActivity : videoCallActivity
+    private lateinit var intent: Intent;
 
 //    var screenPermissionIntent: Intent? = null;
 //
@@ -50,7 +51,7 @@ private var isRunning = false;
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
+        this.intent =intent!!;
         intent.let {
             when(it!!.action) {
                 mainServiceActions.START_SERVICE.name -> {
@@ -73,8 +74,8 @@ private var isRunning = false;
                 }
 
                 mainServiceActions.STOP_PROJECTION.name -> {
-                    webRTCHandler.toggleVideo(false);
-                    webRTCHandler.toggleScreenShare(false);
+//                    webRTCHandler.toggleVideo(false);
+//                    webRTCHandler.toggleScreenShare(false);
                 }
                 else -> Unit
             }
@@ -190,6 +191,7 @@ private var isRunning = false;
     @RequiresApi(Build.VERSION_CODES.S)
     fun stopAudio() {
         audioManager.clearCommunicationDevice()
+//        stopService(intent);
     }
 //    @RequiresApi(Build.VERSION_CODES.Q)
 //    fun toggleScreenShare(shouldShow : Boolean, context_: Context, email: String, videoCallActivity: videoCallActivity) {

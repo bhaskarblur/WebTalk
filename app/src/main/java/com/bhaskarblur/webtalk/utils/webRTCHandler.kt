@@ -344,7 +344,7 @@ class webRTCHandler  {
             localStream?.dispose();
             peerConnectionInstance?.close();
         } catch (e: Exception){
-
+            Log.d("error closing", e.message.toString());
         }
     }
 

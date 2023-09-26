@@ -36,6 +36,7 @@ class loginScreen : AppCompatActivity() {
         getPushToken()
 
     }
+
     private fun getPushToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
